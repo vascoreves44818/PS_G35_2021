@@ -1,4 +1,4 @@
-'use strict'
+window.onload = setup 
 
 const height = window.innerHeight;
 const width = window.innerWidth;
@@ -11,15 +11,17 @@ const svg = d3.select("svg")
     .attr("viewBox", [0, 0, width, height]);
 
 
-//root = graph;
+function setup(){
+    var script = document.getElementById('forceDirectedLayout');
+    root = script.getAttribute('tree');
 
-update();
-createNodes();
-startSimulation();
-
+    update();
+    createGraph();
+    startSimulation();
+}
 
 function update() {
-    flatten(root);
+    flatten(root[0]);
 }
 
 function color(d) {
@@ -38,7 +40,6 @@ function flatten(root) {
         }
         nodes.push(node);
     }
-
     recurse(root);
 }
 

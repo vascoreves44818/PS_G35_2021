@@ -1,5 +1,5 @@
-const services = require('../lib/repo/phylo_services')
-const phylo_file = require('../lib/repo/phylo_file').init()
+const services = require('../repo/phylo_services')
+const phylo_file = require('../repo/phylo_file').init()
 
 const Router = require('express').Router
 const router = Router()

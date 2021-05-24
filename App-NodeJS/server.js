@@ -1,10 +1,12 @@
 'use strict'
 let express = require('express');
 let sitemap = require('express-sitemap-html')
+const bodyParser = require('body-parser')
+
 
 
 let server;
-const routes = require('./routes/routes.js')
+const routes = require('./lib/routes/routes.js')
 
 
 function init(done) {
@@ -15,6 +17,9 @@ function init(done) {
 
         app.use(express.static('public'))
         app.get('/sitemap', sitemap(app))
+        app.use(bodyParser.urlencoded({ extended: false })) // parse application/x-www-form-urlencoded
+
+        
 
         app.use(routes)
 
