@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<div id="graphDiv"></div>
+<script src="https://d3js.org/d3.v6.min.js"></script>
+
+<script src="https://d3js.org/d3-dispatch.v2.min.js"></script>
+<script src="https://d3js.org/d3-quadtree.v2.min.js"></script>
+<script src="https://d3js.org/d3-timer.v2.min.js"></script>
+<script src="https://d3js.org/d3-force.v2.min.js"></script>
+<style>
+    .edge{
+        stroke: rgb(24, 163, 43);
+        stroke-width: 1;
+    }
+    .graphSVG{
+        background-color: black;
+    }
+
+    div.container {
+        width: 100%;
+        border: 1px solid gray;
+    }
+    div.tooltip {
+        position: absolute;
+        text-align: center;
+        width: 180px;
+        padding: 2px;
+        font: 12px sans-serif;
+        background: lightsteelblue;
+        border: 0px;
+        border-radius: 8px;
+        pointer-events: none;
+    }
+</style>
+
+<body>
+<script>
+    var t0 = performance.now();
+    console.log(t0);
+
+    var nodes = []
+    var allNodes = []
+    var links = []
+
+    var simulation;
+    const height = window.innerHeight;
+    const width = window.innerWidth;
+    const radius = 5;
+
+
+    fetch('./../../data/smallTree.txt')
+        .then(response => response.text())
+        .then(text => {
+            var result = text.split(/\r?\n/);
+            result.forEach(txt => {
+                var str = txt.split(' ')
+                var source = str[0]
+                var target = str[2]
+                links.push({"source":source,"target":target})
+
+                if ( !allNodes.includes(source) ) {
+                    nodes.push({'id':source})
+
+                }
+                allNodes.push(source)
+
+                if ( !allNodes.includes(target) ) {
+                    nodes.push({'id':target})
+                }
+                allNodes.push(target)
+            })
+        }).then(_ => {
+
+
+        var canvas = d3.select('#graphDiv').append('canvas')
+            .attr('width', width + 'px')
+            .attr('height', height + 'px')
+            .node();
+
+        var context = canvas.getContext('2d');
+
+        d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+
+        simulation = d3.forceSimulation()
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("x", d3.forceX(width / 2).strength(0.1))
+            .force("y", d3.forceY(height / 2).strength(0.1))
+            .force("charge", d3.forceManyBody().strength(-30))
+            .force("link", d3.forceLink().strength(1).id(d => d.id))
+            .alphaTarget(0)
+            .alphaDecay(0.05)
+
+        var transform = d3.zoomIdentity;
+
+        d3.select(canvas).call(d3.drag()
+            .subject(dragsubject)
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended));
+
+
+
+        function simulationUpdate() {
+            context.save();
+
+            context.clearRect(0, 0, width, height);
+            context.translate(transform.x, transform.y);
+            context.scale(transform.k, transform.k);
+
+            links.forEach(function (d) {
+                context.beginPath();
+                context.moveTo(d.source.x, d.source.y);
+                context.lineTo(d.target.x, d.target.y);
+                context.stroke();
+            });
+
+            // Draw the nodes
+            nodes.forEach(function (d, i) {
+
+                context.beginPath();
+                context.arc(d.x, d.y, radius, 0, 2 * Math.PI, true);
+                context.fillStyle = d.col ? "red" : "black"
+                context.fill();
+            });
+
+            context.restore();
+            //        transform = d3.zoomIdentity;
+        }
+
+
+        function dragstarted(d) {
+            if (!d.event.active) simulation.alphaTarget(0.3).restart();
+            d.event.subject.fx = transform.invertX(d.event.x);
+            d.event.subject.fy = transform.invertY(d.event.y);
+        }
+
+        function dragged(d) {
+            d.event.subject.fx = transform.invertX(d.event.x);
+            d.event.subject.fy = transform.invertY(d.event.y);
+
+        }
+
+        function dragended(d) {
+            if (!d.event.active) simulation.alphaTarget(0);
+            d.event.subject.fx = null;
+            d.event.subject.fy = null;
+        }
+
+        simulation.nodes(nodes)
+            .on("tick", simulationUpdate);
+
+        simulation.force("link")
+            .links(links);
+
+        function dragsubject(d) {
+            var i,
+                x = transform.invertX(event.x),
+                y = transform.invertY(event.y),
+                dx,
+                dy;
+            for (i = nodes.length - 1; i >= 0; --i) {
+                node = nodes[i];
+                dx = x - node.x;
+                dy = y - node.y;
+
+                if (dx * dx + dy * dy < radius * radius) {
+
+                    node.x = transform.applyX(node.x);
+                    node.y = transform.applyY(node.y);
+
+                    return node;
+                }
+            }
+
+        }
+        var t1 = performance.now()
+        console.log(t1);
+        console.log(t1 - t0 + ' s');
+    })
+
+</script>
+</body>

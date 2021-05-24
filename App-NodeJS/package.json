@@ -1,0 +1,13 @@
+{
+  "name": "App-NodeJS",
+  "version": "1.0.0",
+  "dependencies": {
+    "express": "^4.17.1",
+    "hbs": "^4.1.2",
+    "newick": "^2.0.0"
+  },
+  "devDependencies": {
+    "express-handlebars": "^5.3.2",
+    "express-sitemap-html": "^1.2.3"
+  }
+}

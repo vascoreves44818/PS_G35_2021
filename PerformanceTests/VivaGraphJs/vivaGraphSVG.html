@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VivaGraaph SVG</title>
+    <script type="text/javascript" src="./VivaGraphJS/dist/vivagraph.js"></script>
+    <script type="text/javascript">
+        function main () {
+            var t0 = performance.now();
+            console.log(t0);
+
+            var graph = Viva.Graph.graph();
+
+            var graphics = Viva.Graph.View.svgGraphics();
+
+            var nodes = []
+            var allNodes = []
+            var links = []
+
+
+            fetch('./../data/bigTree.txt')
+                .then(response => response.text())
+                .then(text => {
+                    var result = text.split(/\r?\n/);
+                    result.forEach(txt => {
+                        var str = txt.split(' ')
+                        var source = str[0]
+                        var target = str[2]
+                        links.push({"source":source,"target":target})
+
+                        if ( !allNodes.includes(source) ) {
+                            nodes.push({'id':source})
+                        }
+                        allNodes.push(source)
+
+                        if ( !allNodes.includes(target) ) {
+                            nodes.push({'id':target})
+                        }
+                        allNodes.push(target)
+                    })
+                }).then(_ => {
+
+                nodes.forEach( n => {
+                    if (n.id !== undefined)
+                        graph.addNode(n.id,n.id)
+                })
+                links.forEach(l => {
+                    if (l.source !== undefined && l.target !== undefined)
+                    graph.addLink(l.source,l.target)
+                })
+
+                var layout = Viva.Graph.Layout.forceDirected(graph, {
+                    springLength : 35,
+                    springCoeff : 0.00055,
+                    dragCoeff : 0.09,
+                    gravity : -1
+                });
+
+                graphics.node(function(node) {
+                    // This time it's a group of elements: http://www.w3.org/TR/SVG/struct.html#Groups
+                    var ui = Viva.Graph.svg('g'),
+                        // Create SVG text element with user id as content
+                        svgText = Viva.Graph.svg('text').attr('y', '-4px').text(node.id),
+                        circle = Viva.Graph.svg('circle')
+                            .attr('r', 8)
+                            .attr('stroke', '#fff')
+                            .attr('stroke-width', '1.5px')
+                            .attr("fill", '#2ca02c')
+
+
+
+                    ui.append(circle);
+                    ui.append(svgText);
+                    return ui;
+                }).placeNode(function(nodeUI, pos) {
+                    //nodeUI.attr( "cx", pos.x).attr("cy", pos.y);
+                    nodeUI.attr('transform', 'translate(' + (pos.x) + ',' + (pos.y) + ')');
+                });
+
+                var renderer = Viva.Graph.View.renderer(graph, {
+                    container : document.getElementById('graph1'),
+                    layout : layout,
+                    graphics : graphics,
+                    prerender: 20,
+                    renderLinks : true
+                });
+                renderer.run();
+                var t1 = performance.now()
+                console.log(t1);
+                console.log(t1 - t0 + ' ms');
+            })
+
+        }
+    </script>
+
+</head>
+
+<style type='text/css'>
+    body {
+        height: 100%;
+        width: 100%;
+        position: absolute;
+        overflow: hidden;
+    }
+
+    svg { position:fixed; top:0; left:0; height:100%; width:100% }
+</style>
+<body onload='main()'>
+<svg id='graph1'></svg>
+
+</body>
+</html>

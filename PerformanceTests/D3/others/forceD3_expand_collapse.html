@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+    .nodes circle {
+        cursor: pointer;
+        stroke: #3182bd;
+        stroke-width: 1.5px;
+    }
+
+    .nodes text {
+        font: 10px sans-serif;
+        pointer-events: none;
+        text-anchor: middle;
+    }
+
+    .link line {
+        fill: none;
+        stroke: #9ecae1;
+        stroke-width: 1.5px;
+    }
+
+</style>
+<svg></svg>
+<body>
+<script src="https://d3js.org/d3.v6.min.js"></script>
+<script>
+
+    const height = window.innerHeight;
+    const width = window.innerWidth;
+    let root;
+    let links = [], nodes = [];
+    let node, link;
+    let simulation;
+
+    const graph ={"name":"37",
+        "branchset":[
+            {"name":"47",
+                "branchset":[
+                    {"name":"55",
+                        "branchset":[
+                            {"name":"29",
+                                "branchset":[
+                                    {"name":"54","length":1},
+                                    {"name":"77","length":1},
+                                    {"name":"56","branchset":[
+                                            {"name":"25","branchset":[
+                                                    {"name":"24","length":1},
+                                                    {"name":"58","length":2},
+                                                    {"name":"48","branchset":[
+                                                            {"name":"17","branchset":[
+                                                                    {"name":"12","branchset":[
+                                                                            {"name":"71","length":1}
+                                                                        ],"length":1},
+                                                                    {"name":"73","length":1},
+                                                                    {"name":"16","length":1},
+                                                                    {"name":"72","length":1},
+                                                                    {"name":"36","length":1},
+                                                                    {"name":"68","length":4}
+                                                                ],"length":4}],"length":3}
+                                                ],"length":1}
+                                        ],"length":2},
+                                    {"name":"30","branchset":[
+                                            {"name":"26","length":1},
+                                            {"name":"31","branchset":[
+                                                    {"name":"4","branchset":[
+                                                            {"name":"43","length":2},
+                                                            {"name":"45","length":2},
+                                                            {"name":"5","branchset":[
+                                                                    {"name":"27","length":1}
+                                                                ],"length":3},
+                                                            {"name":"46","length":4}
+                                                        ],"length":1},
+                                                    {"name":"18","length":1},
+                                                    {"name":"19","length":1},
+                                                    {"name":"51","branchset":[
+                                                            {"name":"52","branchset":[
+                                                                    {"name":"63","branchset":[
+                                                                            {"name":"62","branchset":[
+                                                                                    {"name":"65","branchset":[
+                                                                                            {"name":"15","branchset":[
+                                                                                                    {"name":"59","length":1},
+                                                                                                    {"name":"21","length":1},
+                                                                                                    {"name":"20","branchset":[
+                                                                                                            {"name":"33","length":1},
+                                                                                                            {"name":"60","length":2},
+                                                                                                            {"name":"22","length":2}
+                                                                                                        ], "length":3}
+                                                                                                ],"length":1},
+                                                                                            {"name":"66", "branchset":[
+                                                                                                    {"name":"67","length":1}
+                                                                                                ],"length":1},
+                                                                                            {"name":"64","length":2},
+                                                                                            {"name":"28","length":2}
+                                                                                        ],"length":2},
+                                                                                    {"name":"61","length":2}
+                                                                                ],"length":2},
+                                                                            {"name":"79","branchset":[
+                                                                                    {"name":"11","length":2}
+                                                                                ],"length":2},
+                                                                            {"name":"23","branchset":[
+                                                                                    {"name":"3","branchset":[
+                                                                                            {"name":"78","length":1}
+                                                                                        ],"length":3}],"length":3}
+                                                                        ],"length":1}
+                                                                ],"length":2}
+                                                        ],"length":2},
+                                                    {"name":"35","branchset":[
+                                                            {"name":"34","length":1},
+                                                            {"name":"2","length":3}
+                                                        ], "length":3},
+                                                    {"name":"53","branchset":[
+                                                            {"name":"44","length":1}
+                                                        ],"length":3},
+                                                    {"name":"74", "branchset":[
+                                                            {"name":"75","length":1},
+                                                            {"name":"76","length":3}
+                                                        ],"length":3},
+                                                    {"name":"49","branchset":[
+                                                            {"name":"50","length":1}
+                                                        ],"length":3},
+                                                    {"name":"80","length":3},
+                                                    {"name":"57","length":4}
+                                                ],"length":2},
+                                            {"name":"32","length":2},
+                                            {"name":"70","length":2}
+                                        ],"length":3}
+                                ],"length":1}
+                        ],"length":2}
+                ],"length":1},
+            {"name":"69","length":2}
+        ],"length":3}
+
+    const svg = d3.select("svg")
+        .attr("viewBox", [0, 0, width, height]);
+
+
+    /*
+    var graph ={
+        "name": "flare",
+        "branchset": [
+            {
+                "name": "analytics",
+                "branchset": [
+                    {
+                        "name": "cluster",
+                        "branchset": [
+                            {"name": "AgglomerativeCluster", "size": 3938},
+                            {"name": "CommunityStructure", "size": 3812},
+                            {"name": "HierarchicalCluster", "size": 6714},
+                            {"name": "MergeEdge", "size": 743}
+                        ]
+                    },
+                    {
+                        "name": "graph",
+                        "branchset": [
+                            {"name": "BetweennessCentrality", "size": 3534},
+                            {"name": "LinkDistance", "size": 5731},
+                            {"name": "MaxFlowMinCut", "size": 7840},
+                            {"name": "ShortestPaths", "size": 5914},
+                            {"name": "SpanningTree", "size": 3416}
+                        ]
+                    },
+                    {
+                        "name": "optimization",
+                        "branchset": [
+                            {"name": "AspectRatioBanker", "size": 7074}
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+
+    .attr("fill", "currentColor")
+            .attr("stroke-linecap", "round")
+            .attr("stroke-linejoin", "round")
+*/
+
+    root = graph;
+    update();
+    createNodes();
+    startSimulation();
+
+    function update() {
+        flatten(root);
+    }
+
+    function color(d) {
+        return d._branshset ? "#3182bd" // collapsed package
+            : d.branchset ? "#c6dbef" // expanded package
+                : "#fd8d3c"; // leaf node
+    }
+
+    function flatten(root) {
+        function recurse(node){
+            if (node.branchset){
+                node.branchset.forEach(function(n){
+                    links.push({source: node.name, target: n.name})
+                    recurse(n)
+                });
+            }
+//          if (!node.id) node.id = ++i;
+            nodes.push(node);
+        }
+
+        recurse(root);
+    }
+
+    function createNodes() {
+        link = svg.append("g")
+            .attr("class", "link")
+            .selectAll("line")
+            .data(links)
+            .enter().append("line")
+
+        node = svg.append("g")
+            .attr("class", "nodes")
+            .selectAll("circle")
+            .data(nodes)
+            .join("circle")
+            .attr("r", 5)
+            .call(d3
+                .drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended)
+            );
+
+        node.append("text")
+            .attr("x", 30 + 4)
+            .attr("y", "0.31em")
+            .text(d => d.name)
+            .clone(true).lower()
+            .attr("fill", "none")
+            .attr("stroke", "white")
+            .attr("stroke-width", 3);
+
+        node.select("circle")
+            .style("fill", color);
+    }
+
+    function startSimulation(){
+        simulation = d3.forceSimulation(nodes)
+            .force("link", d3.forceLink(links).id(d => d.name))
+            .force("charge", d3.forceManyBody().strength(-30))
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .on("tick", ticked);
+    }
+
+    function ticked() {
+        link
+            .attr("x1", d => d.source.x)
+            .attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x)
+            .attr("y2", d => d.target.y);
+
+        node
+            .attr("cx", d => d.x)
+            .attr("cy", d => d.y);
+    }
+
+    function dragstarted(d) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.subject.fx = d.x;
+        d.subject.fy = d.y;
+    }
+
+    function dragged(d) {
+        d.subject.fx = d.x;
+        d.subject.fy = d.y;
+    }
+
+    function dragended(d) {
+        if (!event.active) simulation.alphaTarget(0);
+        d.subject.fx = null;
+        d.subject.fy = null;
+    }
+
+
+
+
+
+
+
+
+</script>
