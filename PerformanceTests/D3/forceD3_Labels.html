@@ -37,7 +37,7 @@
     var svg = d3.select("svg").attr("viewBox", [0, 0, width, height]);
     var simulation;
 
-    fetch('./../data/mediumTree.txt')
+    fetch('./../data/smallTree.txt')
         .then(response => response.text())
         .then(text => {
             var result = text.split(/\r?\n/);

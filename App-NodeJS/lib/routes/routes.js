@@ -19,7 +19,10 @@ function home(req, res, next) {
 function forceDirectLayout(req, res, next) {
     const tree = req.query.tree
     const json = phylo_file.readInputText(tree)
+    var renderDocs = {
+        tree: JSON.stringify(json)
+      }
 
-res.render('visualization', {'tree' : json})
+res.render('visualization', renderDocs)
 }
 

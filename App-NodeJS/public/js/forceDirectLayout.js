@@ -2,10 +2,13 @@ window.onload = setup
 
 const height = window.innerHeight;
 const width = window.innerWidth;
+const radius = 8;
 let root;
 let links = [], nodes = [];
 let node, link;
 let simulation;
+
+//var colors = d3.scale.category20();
 
 const svg = d3.select("svg")
     .attr("viewBox", [0, 0, width, height]);
@@ -13,15 +16,17 @@ const svg = d3.select("svg")
 
 function setup(){
     var script = document.getElementById('forceDirectedLayout');
-    root = script.getAttribute('tree');
-
-    update();
-    createGraph();
+    var tree = script.getAttribute('tree');
+    root = JSON.parse(tree)
+    update(root);
     startSimulation();
+
 }
 
-function update() {
-    flatten(root[0]);
+function update(r) {
+    root.forEach(flatten);
+    createGraph();
+    
 }
 
 function color(d) {
@@ -44,6 +49,7 @@ function flatten(root) {
 }
 
 function createGraph() {
+
     link = svg.append("g")
         .attr("class", "link")
         .selectAll("line")
@@ -52,10 +58,13 @@ function createGraph() {
 
     node = svg.append("g")
         .attr("class", "nodes")
-        .selectAll("circle")
+        .selectAll("g")
         .data(nodes)
-        .join("circle")
-        .attr("r", 5)
+        .join("g")
+    
+    node.append("circle")
+        .attr("r", radius)
+        .on('click', click)
         .call(d3
             .drag()
             .on("start", dragstarted)
@@ -64,24 +73,35 @@ function createGraph() {
         );
 
     node.append("text")
-        .attr("x", 30 + 4)
-        .attr("y", "0.31em")
+        .attr("class","labels")
+        .attr('x', 6)
+        .attr('y', 3)
         .text(d => d.name)
-        .clone(true).lower()
-        .attr("fill", "none")
-        .attr("stroke", "white")
-        .attr("stroke-width", 3);
-
-    node.select("circle")
+        
+    node.selectAll("circle")
         .style("fill", color);
 }
 
 function startSimulation(){
     simulation = d3.forceSimulation(nodes)
         .force("link", d3.forceLink(links).id(d => d.name))
-        .force("charge", d3.forceManyBody().strength(-30))
+        .force("charge", d3.forceManyBody().strength(-5))
         .force("center", d3.forceCenter(width / 2, height / 2))
-        .on("tick", ticked);
+        .on("tick", ticked);        
+}
+
+function click(event, node){
+    console.log("CLICKED")
+  if (node.branchset) {
+    node._branshset = node.branchset;
+    node.branchset = null;
+  } else {
+    node.branchset = node._branshset;
+    node._branshset = null;
+  }
+  
+  update(node);
+  //simulation.alphaTarget().restart()
 }
 
 function ticked() {
@@ -91,9 +111,13 @@ function ticked() {
         .attr("x2", d => d.target.x)
         .attr("y2", d => d.target.y);
 
+     
     node
-        .attr("cx", d => d.x)
-        .attr("cy", d => d.y);
+        .attr("transform", function(d) {
+                    return "translate(" + d.x + "," + d.y + ")";
+        })
+        .attr("cx", function(d) { return d.x = Math.max(radius, Math.min((width) - radius, d.x)); })
+        .attr("cy", function(d) { return d.y = Math.max(radius, Math.min((height) - radius, d.y)); });
 }
 
 function dragstarted(d) {
