@@ -5,25 +5,25 @@ const width = window.innerWidth;
 const radius = 8;
 let root;
 let links = [], nodes = [];
-let node, link;
+
 let simulation;
 
-//var colors = d3.scale.category20();
-
-const svg = d3.select("svg")
+let svg = d3.select('#GraphCanvas')
     .attr("viewBox", [0, 0, width, height]);
 
+let link = svg.selectAll(".link"),
+node = svg.selectAll(".node");
 
 function setup(){
     var script = document.getElementById('forceDirectedLayout');
     var tree = script.getAttribute('tree');
     root = JSON.parse(tree)
-    update(root);
-    startSimulation();
+    start();
+    
 
 }
 
-function update(r) {
+function start() {
     root.forEach(flatten);
     createGraph();
     
@@ -80,6 +80,8 @@ function createGraph() {
         
     node.selectAll("circle")
         .style("fill", color);
+
+    startSimulation();
 }
 
 function startSimulation(){
@@ -92,16 +94,31 @@ function startSimulation(){
 
 function click(event, node){
     console.log("CLICKED")
-  if (node.branchset) {
-    node._branshset = node.branchset;
-    node.branchset = null;
-  } else {
-    node.branchset = node._branshset;
-    node._branshset = null;
-  }
+    if (node.branchset) {
+        node._branshset = node.branchset;
+        node.branchset = null;
+    } else {
+        node.branchset = node._branshset;
+        node._branshset = null;
+    }
+
+       
   
-  update(node);
-  //simulation.alphaTarget().restart()
+}
+
+function updateRoot(n) {   
+    function recurse(node){
+        if(node.name === n.name){
+            node = n;
+            return;
+        } 
+        if (node.branchset){
+            node.branchset.forEach(function(n){
+                recurse(n)
+            });
+        }  
+    }
+    root.forEach(recurse);
 }
 
 function ticked() {

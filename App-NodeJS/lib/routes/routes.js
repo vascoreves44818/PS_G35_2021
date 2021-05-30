@@ -1,4 +1,3 @@
-const services = require('../repo/phylo_services')
 const phylo_file = require('../repo/phylo_file').init()
 
 const Router = require('express').Router
@@ -18,10 +17,11 @@ function home(req, res, next) {
 
 function forceDirectLayout(req, res, next) {
     const tree = req.query.tree
+    
     const json = phylo_file.readInputText(tree)
     var renderDocs = {
         tree: JSON.stringify(json)
-      }
+    }
 
 res.render('visualization', renderDocs)
 }
