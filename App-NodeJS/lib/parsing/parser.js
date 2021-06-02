@@ -1,10 +1,10 @@
 'use strict'
 
-const phylo_db = require('./phylo_db')
-const phylo_file = require('./phylo_db')
+const phylo_db = require('./../repo/phylo_db')
+const phylo_file = require('./../repo/phylo_file')
 
-var tree = script.getAttribute('tree');
-root.forEach(flatten);
+let links = [], nodes = [];
+let root;
 
 function flatten(root) {
     function recurse(node){
@@ -18,3 +18,18 @@ function flatten(root) {
     }
     recurse(root);
 }
+
+function parse(json){
+    links = [];
+    nodes = [];
+    root = json
+    root.forEach(flatten);
+
+    return {
+        nodes: nodes,
+        links: links
+    }
+    
+}
+
+module.exports = { parse }

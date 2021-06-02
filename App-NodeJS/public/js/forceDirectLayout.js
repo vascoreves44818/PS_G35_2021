@@ -8,7 +8,7 @@ let links = [], nodes = [];
 
 let simulation;
 
-let svg = d3.select('#GraphCanvas')
+let svg = d3.select('#svgCanvas')
     .attr("viewBox", [0, 0, width, height]);
 
 let link = svg.selectAll(".link"),
@@ -16,17 +16,14 @@ node = svg.selectAll(".node");
 
 function setup(){
     var script = document.getElementById('forceDirectedLayout');
-    var tree = script.getAttribute('tree');
-    root = JSON.parse(tree)
+    var tree = JSON.parse(script.getAttribute('tree'));
+    //tree = JSON.parse(tree)
+    links = tree.links
+    nodes = tree.nodes
+
     start();
     
 
-}
-
-function start() {
-    root.forEach(flatten);
-    createGraph();
-    
 }
 
 function color(d) {
@@ -35,20 +32,8 @@ function color(d) {
             : "#fd8d3c"; // leaf node
 }
 
-function flatten(root) {
-    function recurse(node){
-        if (node.branchset){
-            node.branchset.forEach(function(n){
-                links.push({source: node.name, target: n.name})
-                recurse(n)
-            });
-        }
-        nodes.push(node);
-    }
-    recurse(root);
-}
 
-function createGraph() {
+function start() {
 
     link = svg.append("g")
         .attr("class", "link")
@@ -104,21 +89,6 @@ function click(event, node){
 
        
   
-}
-
-function updateRoot(n) {   
-    function recurse(node){
-        if(node.name === n.name){
-            node = n;
-            return;
-        } 
-        if (node.branchset){
-            node.branchset.forEach(function(n){
-                recurse(n)
-            });
-        }  
-    }
-    root.forEach(recurse);
 }
 
 function ticked() {
