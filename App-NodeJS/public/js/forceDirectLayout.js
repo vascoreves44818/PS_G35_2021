@@ -17,18 +17,39 @@ node = svg.selectAll(".node");
 function setup(){
     var script = document.getElementById('forceDirectedLayout');
     var tree = JSON.parse(script.getAttribute('tree'));
-    //tree = JSON.parse(tree)
     links = tree.links
     nodes = tree.nodes
 
     start();
-    
+
+    var switchLabels = document.getElementById('NodeLabels')
+    switchLabels.addEventListener('change', function () {
+        checker(this.checked)
+    })
 
 }
 
+function checker(checked) {
+    checked ? showLabels() : removeLabels()
+}
+  
+function showLabels() {
+    var labels = document.getElementsByClassName('labels')
+    for (i = 0; i < labels.length; i++) {
+        labels[i].setAttribute("visibility","visible");
+    }
+}
+
+function removeLabels() {
+    var labels = document.getElementsByClassName('labels')
+    for (i = 0; i < labels.length; i++) {
+        labels[i].setAttribute("visibility","hidden");
+    }
+}
+  
 function color(d) {
-    return d._branshset ? "#3182bd" // collapsed package
-        : d.branchset ? "#c6dbef" // expanded package
+    return d._branchset ? "#3182bd" // collapsed package
+            : d.branchset ? "#c6dbef" // expanded package
             : "#fd8d3c"; // leaf node
 }
 
@@ -39,15 +60,21 @@ function start() {
         .attr("class", "link")
         .selectAll("line")
         .data(links)
-        .enter().append("line")
+        .enter()
+        .append("line")
+        .attr("id", d => (d.source+d.target))
 
     node = svg.append("g")
         .attr("class", "nodes")
         .selectAll("g")
         .data(nodes)
         .join("g")
+
     
-    node.append("circle")
+    node
+        .attr("id", d => d.name+"_node")
+        .append("circle")
+        .attr("id", d => d.name)
         .attr("r", radius)
         .on('click', click)
         .call(d3
@@ -62,6 +89,7 @@ function start() {
         .attr('x', 6)
         .attr('y', 3)
         .text(d => d.name)
+
         
     node.selectAll("circle")
         .style("fill", color);
@@ -77,18 +105,45 @@ function startSimulation(){
         .on("tick", ticked);        
 }
 
+
 function click(event, node){
     console.log("CLICKED")
-    if (node.branchset) {
-        node._branshset = node.branchset;
+
+    if(node.branchset){
+        node._branchset = node.branchset
         node.branchset = null;
     } else {
-        node.branchset = node._branshset;
-        node._branshset = null;
+        node.branchset = node._branchset;
+        node._branchset = null;
     }
 
-       
-  
+    var changeColor = document.getElementById(node.name)
+    changeColor.style.fill = color(node)
+
+    function recurse(name){
+        links.forEach(n => {
+            var source = n.source;
+            var target = n.target;
+            if(source.name == name){
+                recurse(target.name)
+                var nd = document.getElementById(target.name+"_node");
+                changeVisibility(nd);
+                var lk = document.getElementById(source.name+target.name);
+                changeVisibility(lk)
+            }
+        })
+    
+    }
+
+    recurse(node.name);
+
+    function changeVisibility(element){
+        if(element.style.visibility == "" || element.style.visibility=="visible")
+            element.style.visibility = "hidden"
+        else
+            element.style.visibility = "visible"
+    }
+    
 }
 
 function ticked() {
