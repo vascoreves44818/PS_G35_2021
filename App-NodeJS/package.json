@@ -2,10 +2,17 @@
   "name": "App-NodeJS",
   "version": "1.0.0",
   "dependencies": {
+    "@tarp/require": "^1.4.3",
+    "biojs-io-newick": "^1.5.0",
     "body-parser": "^1.19.0",
+    "d3-zoom": "^3.0.0",
+    "esprima": "^4.0.1",
     "express": "^4.17.1",
+    "express-form-data": "^2.0.17",
     "hbs": "^4.1.2",
-    "newick": "^2.0.0"
+    "newick": "^2.0.0",
+    "newick-js": "^1.1.1",
+    "uniq": "^1.0.1"
   },
   "devDependencies": {
     "express-handlebars": "^5.3.2",

@@ -2,7 +2,13 @@
 let express = require('express');
 let sitemap = require('express-sitemap-html')
 const bodyParser = require('body-parser')
+const formData = require("express-form-data");
+const os = require("os");
 
+const options = {
+    uploadDir: os.tmpdir(),
+    autoClean: true
+  };
 
 
 let server;
@@ -17,9 +23,18 @@ function init(done) {
 
         app.use(express.static('public'))
         app.get('/sitemap', sitemap(app))
+        app.use(bodyParser.json())
+        //app.use(bodyParser.text());
         app.use(bodyParser.urlencoded({ extended: false })) // parse application/x-www-form-urlencoded
 
-        
+        // parse data with connect-multiparty. 
+        app.use(formData.parse(options));
+        // delete from the request all empty files (size == 0)
+        app.use(formData.format());
+        // change the file objects to fs.ReadStream 
+        app.use(formData.stream());
+        // union the body and the files
+        app.use(formData.union());
 
         app.use(routes)
 

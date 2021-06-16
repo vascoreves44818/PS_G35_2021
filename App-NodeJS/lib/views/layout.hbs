@@ -2,16 +2,21 @@
 <html>
     <head>
         <title>Phyloviz</title>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-wEmeIV1mKuiNpC+IOBjI7aAzPcEZeedi5yW5f2yOq55WWLwNGmvvx4Um1vskeMj0" crossorigin="anonymous">        <!--<script type='text/javascript' src='./public/js/phylo.js'></script>-->
+        <!-- CSS only -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+        <!-- JavaScript Bundle with Popper -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4" crossorigin="anonymous"></script>
+        <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
         </head>
     <body>
-        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
 
         <nav class="navbar navbar-light bg-light">
             <div class="container-fluid">
                 <span class="navbar-brand mb-0 h1">PHYLOVIZ</span>
             </div>
         </nav>
+        <div class="messages"></div>
     
         <div class="container-fluid">
             <div class="row flex-nowrap">
@@ -22,7 +27,7 @@
                         </a>
                         <ul class="nav nav-pills flex-column mb-sm-auto mb-0 align-items-center align-items-sm-start" id="menu">
                             <li class="nav-item">
-                                <a href="#"  class="nav-link text-white" aria-current="page">
+                                <a href="/phyloviz/home"  class="nav-link text-white" aria-current="page">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-house-fill" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="m8 3.293 6 6V13.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5V9.293l6-6zm5-.793V6l-2-2V2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5z"/>
                                     <path fill-rule="evenodd" d="M7.293 1.5a1 1 0 0 1 1.414 0l6.647 6.646a.5.5 0 0 1-.708.708L8 2.207 1.354 8.854a.5.5 0 1 1-.708-.708L7.293 1.5z"/>
@@ -40,19 +45,14 @@
                                     </svg>
                                 Insert Tree:
                                 </a>
-                                <form method="GET"> <!-- By default the request is made to the origin URL -->
+                                <form method="GET" id="submitTree" action="/phyloviz/visualization" onsubmit="return validateTreeForm()">
                                     <div class="input-group mb-3">
-                                        <input name="tree" type="text" class="form-control" id="inputFile" formaction="/phyloviz/visualization">
-                                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"></button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
-                                            <li><a class="dropdown-item" href="#">Newick</a></li>
-                                            <li><a class="dropdown-item" href="#">Nexus</a></li>
-                                        </ul>
-                                        <button formaction="/phyloviz/visualization"  type="submit">Upload</button>
+                                    <input id="inputTree" name="tree" type="text" class="form-control" aria-label="Choose input type.">
+                                    <button  type="submit" class="btn btn-LIGHT" >GO</button>
                                     </div>
-                                </form>
+                                </form>   
                             </li>
-                            
+
                             <li>
                                 <a href="#"  class="nav-link text-white" aria-current="page">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-plus-fill" viewBox="0 0 16 16">
@@ -61,19 +61,15 @@
                                     </svg>
                                 Insert File:
                                 </a>
-                                <form method="GET"> <!-- By default the request is made to the origin URL -->
+                                    
+                                <form method="GET" id="formInputFile" action="/phyloviz/visualization/file">
                                     <div class="input-group mb-3">
-                                        <input name="tree" type="text" class="form-control" id="inputFile" formaction="/phyloviz/visualization">
-                                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"></button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
-                                            <li><a class="dropdown-item" href="#">Newick</a></li>
-                                            <li><a class="dropdown-item" href="#">Nexus</a></li>
-                                        </ul>
-                                        <button formaction="/phyloviz/visualization"  type="submit">Upload</button>
-                                    </div>
-                                </form>
+                                        <input name="FilePath" class="form-control" type="file" id="inputFile">  
+                                        <button id="submitFile"  type="submit" class="btn btn-LIGHT" >GO</button>
+                                    </div>                                
+                                </form>    
                             </li>
-                                
+                    
                             <li>
                                 <a href="#" class="nav-link text-white">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cloud-arrow-down-fill" viewBox="0 0 16 16">
@@ -83,13 +79,66 @@
                                 Load From Database
                                 </a>
                             </li>
-                            <hr>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="NodeLabels" checked>
-                                <label class="form-check-label" for="NodeLabels">Node Labels</label>
-                            </div>
+                            
+                            <hr style="width:50%" size="3"  color="white"> 
+
+
+                            <li>
+                                <div class="mb-3">
+                                    <!-- Button trigger modal -->
+                                    <button type="button" class="btn btn-LIGHT" data-bs-toggle="modal" data-bs-target="#datasetInfo">
+                                    DATASET INFO
+                                    </button>
+
+                                    <!-- Modal -->
+                                    <div class="modal fade" id="datasetInfo" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="exampleModalLabel" style="color: black;">DATASET INFO</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body" id="GraphicInfo">
+                
+                                            </div>
+                                            <!--<div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            </div> -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <div class="mb-3">
+                                    <button class="btn btn-LIGHT" type="button" data-toggle="collapse" data-target="#collapsedGraphic" aria-expanded="false" aria-controls="collapsedGraphic">
+                                        DATA FILTERS
+                                    </button>
+                                    <div class="collapse" id="collapsedGraphic">
+                                        <div class="card card-body">
+                                            SOME EXAMPLE N SHIT  
+                                        </div>
+                                    </div>
+                                </div>  
+                            </li>
+                            
+                            <li>
+                                <div  >
+                                    <button class="btn btn-LIGHT" type="button" data-toggle="collapse" data-target="#collapsedFilters" aria-expanded="false" aria-controls="collapsedFilters">
+                                        GRAPHIC FILTERS
+                                    </button>
+                                        <div class="collapse" id="collapsedFilters">
+                                            <div class="mt-3 form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="NodeLabels" checked>
+                                            <label class="form-check-label" for="NodeLabels">Node Labels</label>
+                                            </div>
+                                        </div>
+                                </div>  
+                            </li>
+                            
+                            
                         </ul>
-                        <hr>
+                        
                         
                         
                         
