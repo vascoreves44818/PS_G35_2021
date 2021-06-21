@@ -1,7 +1,39 @@
 <script type="text/javascript" src="/js/checkInputs.js"></script>
-<div>
-    <svg id="svgCanvas"></svg>
+<div class="tab-content" id="myTabContent">
+    <div class="tab-pane fade show active col py-3" id="canvasGraph" role="tabpanel" aria-labelledby="home-tab">
+            <svg id="svgCanvas"></svg>
+    </div>
+    <div class="tab-pane fade" id="profileTablePanel" role="tabpanel" aria-labelledby="profile-tab">
+        <div id="profileTabel"></div>
+        <ul class="pagination justify-content-end">
+            <li class="page-item ">
+                <span id="pageProfile" class="page-link">1</span>
+            </li>
+            <li class="page-item">
+                <a id="btn_prev_profile" class="page-link"  href="javascript:prevPageProfile()" aria-disabled="true">Previous</a>
+            </li>
+            <li class="page-item mr-5">
+                <a id="btn_next-profile" class="page-link" href="javascript:nextPageProfile()">Next</a>
+            </li>
+            
+        </ul>
+    </div>
+    <div class="tab-pane fade" id="auxTablePanel" role="tabpanel" aria-labelledby="aux-tab">
+        <div id="auxTable"></div>
+        <ul class="pagination justify-content-end">
+            <li class="page-item">
+                <span class="page-link" id="pageAux">1 </span>
+            </li>
+            <li class="page-item">
+                <a id="btn_prev_aux" class="page-link"  href="javascript:prevPageAux()"  aria-disabled="true">Previous</a>
+            </li>
+            <li class="page-item">
+                <a id="btn_next-aux" class="page-link" href="javascript:nextPageAux()">Next</a>
+            </li>
+        </ul>
+    </div>
 </div>
+
 <style>
     .nodes circle {
         cursor: pointer;
@@ -22,5 +54,6 @@
     }
 </style>
 <script src="https://d3js.org/d3.v6.min.js"></script>
-<script id="forceDirectedLayout" type="text/javascript" src="/js/forceDirectLayout.js" tree={{{tree}}}></script>
+<!--<script id="buildTables" type="text/javascript" src="/js/buildTables.js" tables={{{tables}}} profileData={{{profileData}}} auxiliaryData={{{auxiliaryData}}}></script>-->
+<script id="forceDirectedLayout" type="text/javascript" src="/js/forceDirectLayout.js" json={{{json}}} profileInfo={{{profileData}}} auxiliaryInfo={{{auxiliaryData}}}></script>
 

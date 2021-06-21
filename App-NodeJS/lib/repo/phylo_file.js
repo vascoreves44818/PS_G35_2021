@@ -1,38 +1,53 @@
- 'use strict'
+'use strict'
 
-const fs = require('fs')
 const newick = require("newick");
-var parser = require("biojs-io-newick");
+const parser = require('./../parsing/parser')
 
-let filePath = './data/tree.txt'
 
-function init(path) {
-    if(path) filePath = path
-    return {
-        readNewickTree,
-        readNexusTree,
-        readInputText,
-        readFile
-    }
+function getJson(tree){
+    return new Promise((resolve, reject) => {
+        var data;
+        if(!tree) reject('No data inserted!')
+        if(tree.includes('BEGIN'))
+            data = readNexusTree(tree)
+        else
+            data = readNewickTree(tree)
+
+        const renderDocs = parser.parse(data)
+        resolve(renderDocs)
+
+    });
+    
+    
 }
 
-fs.readFileAsync = function(filename) {
-    return new Promise(function(resolve, reject) {
-        fs.readFile(filename, function(err, data){
-            if (err) 
-                reject(err); 
-            else 
-                resolve(data);
-        });
+function createTables(profile,auxiliary){
+    let array = [];
+    let pd,ad;
+    if(profile){
+        pd = profile.split('\r\n') 
+        array.push(pd)
+    }
+     
+    if(auxiliary){
+        ad = auxiliary.split('\r\n') 
+        array.push(ad)
+    }
+    return array;
+}
+
+function readProfile(profileData){    
+    return new Promise((resolve, reject) => {
+        let tableElements = profileData.split('\r\n')        
+        resolve(tableElements)
     });
-};
+}
 
-
-function readFile(fp){
-    return fs
-        .readFileAsync(fp)
-        .then(text =>text)
-        
+function readAuxiliar(auxData){    
+    return new Promise((resolve, reject) => {
+        let tableElements = auxData.split('\r\n')
+        resolve(tableElements)
+    });
 }
 
 /* Returns array with trees in JSON*/
@@ -56,21 +71,7 @@ function readNexusTree(tree){
     let arr = [];
     let nw = tree.split('=').pop();
     let lvls = nw.split(';').filter(i => i);
-    //lvls.pop()
-    lvls.map(t => {
-        if(!t.includes('(')){
-            t = '(' + t + ')'
-        }
-        let js = newick.NewickTools.parse(t);
-        arr.push(js)
-    })
-    return arr;
-
-}
-
-function readInputText(tree){
-    let arr = [];
-    let lvls = tree.split(';').filter(i => i);
+    lvls.pop()
     lvls.map(t => {
         if(!t.includes('(')){
             t = '(' + t + ')'
@@ -80,19 +81,6 @@ function readInputText(tree){
     })
     return arr;
 }
-/*
-function readInputText(tree){
-    let arr = [];
-    let lvls = tree.split(';');
-    lvls.map(t => {
-        if(!t.includes('(')){
-            t = '(' + t + ')'
-        }
-        const result = parser.parse_nhx(t);
-        arr.push(result)
-    })
-    return arr;
-}
-*/
 
-module.exports = { init }
+
+module.exports = { getJson,createTables }
