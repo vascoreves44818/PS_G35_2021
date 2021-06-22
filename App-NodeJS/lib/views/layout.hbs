@@ -14,6 +14,7 @@
         <nav class="navbar navbar-light bg-light">
             <div class="container-fluid">
                 <span class="navbar-brand mb-0 h1">PHYLOVIZ</span>
+                <!-- VISUALIZATION OPTIONS -->
                 <ul  class="nav nav-tabs" id="graphicTab" role="tablist" style="visibility: hidden">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#canvasGraph" type="button" role="tab" aria-controls="home" aria-selected="true">TREE</button>
@@ -26,7 +27,7 @@
                     </li>
                 </ul>
                 
-                </div>
+            </div>
         </nav>
         <div class="messages"></div>
 
@@ -78,10 +79,10 @@
                                         </svg>
                                     New Dataset:
                                     </a>
-                                    <button class="btn btn-LIGHT dropdown-toggle" type="button" data-toggle="collapse" data-target="#collapsedGraphic" aria-expanded="false" aria-controls="collapsedGraphic">   
+                                    <button class="btn btn-LIGHT dropdown-toggle" type="button" data-toggle="collapse" data-target="#newDataset" aria-expanded="false" aria-controls="collapsedGraphic">   
                                     </button>
                                 </div>
-                                <div class="collapse" id="collapsedGraphic">
+                                <div class="collapse" id="newDataset">
                                     <div class="card text-white bg-dark mb-3 card-body">
                                         <!-- FILE READING FORM -->
                                         <form method="GET" id="formInputFile" action="/phyloviz/visualization/file">
@@ -171,7 +172,7 @@
                                     </button>
                                         <div class="collapse" id="collapsedFilters">
                                             <div class="mt-3 form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="NodeLabels" checked>
+                                                <input class="form-check-input" type="checkbox" id="NodeLabels">
                                                 <label class="form-check-label" for="NodeLabels">Node Labels</label>
                                             </div>
                                         </div>

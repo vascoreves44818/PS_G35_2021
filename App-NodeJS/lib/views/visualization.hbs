@@ -2,6 +2,27 @@
 <div class="tab-content" id="myTabContent">
     <div class="tab-pane fade show active col py-3" id="canvasGraph" role="tabpanel" aria-labelledby="home-tab">
             <svg id="svgCanvas"></svg>
+            
+            <button type="button" class="btn btn-sm btn-outline-dark"  onclick="pauseSimulation()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pause" viewBox="0 0 16 16">
+                    <path id="btn_pause_simulation" d="M6 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5zm4 0a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5z"/>
+                    <path id="btn_continue_simulation" style="visibility: hidden;"  d="M10.804 8 5 4.633v6.734L10.804 8zm.792-.696a.802.802 0 0 1 0 1.392l-6.363 3.692C4.713 12.69 4 12.345 4 11.692V4.308c0-.653.713-.998 1.233-.696l6.363 3.692z"/>
+                </svg>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-dark" id="btn_restart_simulation" onclick="restartSimulation()">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-repeat" viewBox="0 0 16 16">
+                <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/>
+                <path fill-rule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"/>
+                </svg>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-dark" id="btn_pin_nodes" onclick="pinNodes()">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pin" viewBox="0 0 16 16">
+                <path d="M4.146.146A.5.5 0 0 1 4.5 0h7a.5.5 0 0 1 .5.5c0 .68-.342 1.174-.646 1.479-.126.125-.25.224-.354.298v4.431l.078.048c.203.127.476.314.751.555C12.36 7.775 13 8.527 13 9.5a.5.5 0 0 1-.5.5h-4v4.5c0 .276-.224 1.5-.5 1.5s-.5-1.224-.5-1.5V10h-4a.5.5 0 0 1-.5-.5c0-.973.64-1.725 1.17-2.189A5.921 5.921 0 0 1 5 6.708V2.277a2.77 2.77 0 0 1-.354-.298C4.342 1.674 4 1.179 4 .5a.5.5 0 0 1 .146-.354zm1.58 1.408-.002-.001.002.001zm-.002-.001.002.001A.5.5 0 0 1 6 2v5a.5.5 0 0 1-.276.447h-.002l-.012.007-.054.03a4.922 4.922 0 0 0-.827.58c-.318.278-.585.596-.725.936h7.792c-.14-.34-.407-.658-.725-.936a4.915 4.915 0 0 0-.881-.61l-.012-.006h-.002A.5.5 0 0 1 10 7V2a.5.5 0 0 1 .295-.458 1.775 1.775 0 0 0 .351-.271c.08-.08.155-.17.214-.271H5.14c.06.1.133.191.214.271a1.78 1.78 0 0 0 .37.282z"/>
+                </svg>
+            </button>
+
+           
+
     </div>
     <div class="tab-pane fade" id="profileTablePanel" role="tabpanel" aria-labelledby="profile-tab">
         <div id="profileTabel"></div>
@@ -14,12 +35,16 @@
             </li>
             <li class="page-item mr-5">
                 <a id="btn_next-profile" class="page-link" href="javascript:nextPageProfile()">Next</a>
-            </li>
-            
+            </li>      
         </ul>
+        <div id="profilePieChartDiv">
+            <svg id="profilePieChartSVG"></svg>
+        </div>
+       
     </div>
     <div class="tab-pane fade" id="auxTablePanel" role="tabpanel" aria-labelledby="aux-tab">
-        <div id="auxTable"></div>
+        <div id="auxTable">
+        </div>
         <ul class="pagination justify-content-end">
             <li class="page-item">
                 <span class="page-link" id="pageAux">1 </span>
@@ -31,7 +56,15 @@
                 <a id="btn_next-aux" class="page-link" href="javascript:nextPageAux()">Next</a>
             </li>
         </ul>
+        <div id="auxPieChartDiv">
+            <svg id="auxPieChartSVG"></svg>
+        </div>
+        
+
+
     </div>
+
+    
 </div>
 
 <style>
@@ -52,8 +85,11 @@
         stroke: #9ecae1;
         stroke-width: 1.5px;
     }
+
+    .nounderline {
+        text-decoration: none 
+    }
 </style>
 <script src="https://d3js.org/d3.v6.min.js"></script>
-<!--<script id="buildTables" type="text/javascript" src="/js/buildTables.js" tables={{{tables}}} profileData={{{profileData}}} auxiliaryData={{{auxiliaryData}}}></script>-->
 <script id="forceDirectedLayout" type="text/javascript" src="/js/forceDirectLayout.js" json={{{json}}} profileInfo={{{profileData}}} auxiliaryInfo={{{auxiliaryData}}}></script>
 

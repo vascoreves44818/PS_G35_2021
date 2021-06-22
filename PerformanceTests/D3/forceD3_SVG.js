@@ -16,7 +16,7 @@ var links = []
 var simulation;
 
 
-fetch('./../data/smallTree.txt')
+fetch('./../data/mediumTree.txt')
     .then(response => response.text())
     .then(text => {
         var result = text.split(/\r?\n/);

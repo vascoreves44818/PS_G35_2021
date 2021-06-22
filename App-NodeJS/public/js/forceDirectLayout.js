@@ -14,7 +14,7 @@ function setup(){
     links = data.links
     nodes = data.nodes
 
-    start();
+    init();
     createTables(pd,ad);
 
     switchLabels.addEventListener('change', function () {
@@ -26,34 +26,40 @@ function setup(){
 
 const height = window.innerHeight;
 const width = window.innerWidth;
-const radius = 8;
+const radius = 15;
 let links = [], nodes = [];
 var min_zoom = 0.1;
 var max_zoom = 7;
+let paused = false;
+let pinned = false;
+let simulation;
+let svg;
+let link;
+let g;
 
 const switchLabels = document.getElementById('NodeLabels')
+ function init(){
+    svg = d3.select('#svgCanvas')
+    .attr("viewBox", `${-width/2} ${-height/2} ${width*2} ${height*2}`)
+    //.attr("viewBox", [0, 0, width, height]);
 
-let simulation;
+    link = svg.selectAll(".link"), node = svg.selectAll(".node");
+    g = svg.append("g");
 
-let svg = d3.select('#svgCanvas')
-    .attr("viewBox", [0, 0, width, height]);
+    const zoom = d3.zoom()
+        .extent([[0, 0], [width, height]])
+        .scaleExtent([0.1, 8])
+        .on("zoom", zoomed);
 
-let link = svg.selectAll(".link"), node = svg.selectAll(".node");
-const g = svg.append("g");
-
-const zoom = d3.zoom()
-    .extent([[0, 0], [width, height]])
-    .scaleExtent([1, 8])
-    .on("zoom", zoomed);
-
-svg.call(zoom);
-
+    svg.call(zoom);
+    start();
+ }
 function zoomed({transform}) {
     g.attr("transform", transform);
 }
 
 function checker(checked) {
-    checked ? showLabels() : removeLabels()
+    checked ? showLabels() : hideLabels()
 }
   
 function showLabels() {
@@ -64,7 +70,7 @@ function showLabels() {
     }
 }
 
-function removeLabels() {
+function hideLabels() {
     var labels = document.getElementsByClassName('labels')
     for (i = 0; i < labels.length; i++) {
         labels[i].setAttribute("visibility","hidden");
@@ -100,23 +106,25 @@ function start() {
         .attr("id", d => d.name)
         .attr("r", radius)
         .on('click', click)
-        .call(d3
-            .drag()
-            .on("start", dragstarted)
-            .on("drag", dragged)
-            .on("end", dragended)
-        );
+        
 
     node.append("text")
         .attr("class","labels")
-        .attr('x', 6)
+        .attr('x', 3)
         .attr('y', 3)
         .text(d => d.name)
-
-        
+    
+    checker(switchLabels.checked)
+ 
     node.selectAll("circle")
         .style("fill", color);
 
+    node.call(d3
+        .drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended)
+    );
 
 
     startSimulation();
@@ -125,8 +133,10 @@ function start() {
 function startSimulation(){
     simulation = d3.forceSimulation(nodes)
         .force("link", d3.forceLink(links).id(d => d.name))
-        .force("charge", d3.forceManyBody().strength(-10))
+        .force("charge", d3.forceManyBody().strength(-100))
         .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("collide", d3.forceCollide().radius(radius+2))
+        .alphaTarget(0.8)
         .on("tick", ticked);
 }
 
@@ -203,14 +213,14 @@ function ticked() {
         .attr("transform", function(d) {
                     return "translate(" + d.x + "," + d.y + ")";
         })
-        .attr("cx", function(d) { return d.x})
-        .attr("cy", function(d) { return d.y});
+        
 }
 
 function dragstarted(d) {
-    if (!event.active) simulation.alphaTarget(0.3).restart();
+    if (!event.active) simulation.alphaTarget(0.8).restart();
     d.subject.fx = d.x;
     d.subject.fy = d.y;
+
 }
 
 function dragged(d) {
@@ -222,6 +232,90 @@ function dragended(d) {
     if (!event.active) simulation.alphaTarget(0);
     d.subject.fx = null;
     d.subject.fy = null;
+}
+
+function restartSimulation(){
+    simulation.stop();
+    g.selectAll("*").remove();
+    start();
+}
+
+function pauseSimulation(){
+    if(paused){
+        simulation.restart();
+        node.call(d3
+            .drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended)
+        );
+        var btnContinue = document.getElementById('btn_continue_simulation');
+        var btnPause = document.getElementById('btn_pause_simulation');
+        btnContinue.style.visibility = 'hidden'
+        btnPause.style.visibility = 'visible'
+        paused = false;
+    } else {
+        simulation.stop();
+        node.call(d3
+            .drag()
+            .on("start", null)
+            .on("drag", null)
+            .on("end", null)
+        );
+        var btnContinue = document.getElementById('btn_continue_simulation');
+        var btnPause = document.getElementById('btn_pause_simulation');
+        btnContinue.style.visibility = 'visible'
+        btnPause.style.visibility = 'hidden'
+        paused = true;
+    }
+    
+}
+
+function pinNodes(){
+    /*
+    var btnPinNodes = document.getElementById('btn_pin_nodes');
+    
+    if(pinned == true){
+        node.call(d3
+            .drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended)
+        );
+        btnPinNodes.setAttribute('class','btn btn-sm btn-outline-dark');
+        pinned = false;
+    } else {
+        
+        simulation.stop();
+        
+        node.call(d3
+            .drag()
+            .on("start", dragFixedstarted)
+            .on("drag", draggedFixed)
+            .on("end", dragFixedended)
+        );
+        btnPinNodes.setAttribute('class','btn btn-sm btn-dark');
+        pinned = true;
+    }
+    
+    function dragFixedstarted(d) {
+        //if (!event.active) simulation.alphaTarget(0.8).restart();
+        d.subject.fx = d.x;
+        d.subject.fy = d.y;
+    }
+    
+    function draggedFixed(d) {
+        d.subject.fx = d.x;
+        d.subject.fy = d.y;
+    }
+    
+    function dragFixedended(d) {
+        if (!event.active) simulation.alphaTarget(0);
+        d.subject.fx = null;
+        d.subject.fy = null;
+    }*/
+    
+        
 }
 
 ///////////////////// TABLES ////////////////////////////////
@@ -236,6 +330,7 @@ let profileHeaders;
 let auxiliaryHeaders;
 
 
+
 /**
  * 
  * @param {Array table rows} data 
@@ -245,7 +340,7 @@ let auxiliaryHeaders;
 function buildTable(data,tableDiv,headers){
     tableDiv.innerHTML = ""
     var table = document.createElement('table')
-    table.setAttribute('class','table table-striped table-bordered')
+    table.setAttribute('class','table table-striped table-bordered table-hover')
 
     //CREATE TABLE HEADERS
     var tableHead = document.createElement('thead');
@@ -254,8 +349,14 @@ function buildTable(data,tableDiv,headers){
         
     headers.forEach(element => {
         var headerElement = document.createElement('th')
-        headerElement.innerHTML=element;
         headerElement.setAttribute('id',element);
+
+        var linkHeader = document.createElement('a')
+        linkHeader.setAttribute('class', 'nounderline btn-lg')
+        linkHeader.onclick = newPieChart;
+        linkHeader.innerHTML = element
+       
+        headerElement.appendChild(linkHeader);
         tableTRhead.appendChild(headerElement);
     })
     table.appendChild(tableHead);
@@ -268,7 +369,7 @@ function buildTable(data,tableDiv,headers){
         tableBody.appendChild(tableTR);
 
         items.forEach(element => {
-            var tableElement = document.createElement('th')
+            var tableElement = document.createElement('td')
             tableElement.innerHTML=element;
             tableElement.setAttribute('id',element);
             tableTR.appendChild(tableElement);
@@ -281,17 +382,18 @@ function buildTable(data,tableDiv,headers){
     return;
 }
 
-
 function createTables(profile,aux){
     if(profile && profile!='auxiliaryInfo='){    
         pData = JSON.parse(profile)
-        profileHeaders = pData.shift();        
+        profileHeaders = pData.shift();
+        profileHeaders = profileHeaders.split('\t')        
         changePage(1,'profile');
         
     }
     if(aux){
         auxData = JSON.parse(aux)
         auxiliaryHeaders = auxData.shift();
+        auxiliaryHeaders = auxiliaryHeaders.split('\t');
         changePage(1,'aux');
         
     }
@@ -347,7 +449,7 @@ function changePage(page, type)
         btn_prev = document.getElementById("btn_prev_profile");
         page_span = document.getElementById("pageProfile");
         obj = pData;
-        headers = profileHeaders.split('\t');
+        headers = profileHeaders
     }
     else {
         div = document.getElementById('auxTable');
@@ -355,7 +457,7 @@ function changePage(page, type)
         btn_prev = document.getElementById("btn_prev_aux");
         page_span = document.getElementById("pageAux");
         obj = auxData;
-        headers = auxiliaryHeaders.split('\t');
+        headers = auxiliaryHeaders
     }
         
     // Validate page
@@ -369,10 +471,8 @@ function changePage(page, type)
 
     page_span.innerHTML = page;
 
-
     buildTable(dataToShow,div,headers);
     
-
     if (page == 1) {
         btn_prev.ariaDisabled = true;
     } else {
@@ -391,6 +491,87 @@ function numPages()
     return Math.ceil(obj.length / records_per_page);
 }
 
+//////////////////////// PIE CHARTS //////////////////////////////
+
+function newPieChart(event){  
+    var header = event.currentTarget.innerHTML;
+    var path = event.path;
+    var divTabel = document.getElementById('profileTablePanel')
+    if(path.includes(divTabel)){
+        var index = profileHeaders.indexOf(header);
+        var elements = []
+        pData.forEach( row => {
+            var items = row.split('\t');
+            elements.push(items[index]);
+        })
+        buildPieChart(header, elements,'#profilePieChartSVG')
+        
+    } else {
+        var index = auxiliaryHeaders.indexOf(header);
+        var elements = []
+        auxData.forEach( row => {
+            var items = row.split('\t');
+            elements.push(items[index]);
+        })
+        buildPieChart(header, elements,'#auxPieChartSVG')
+    }  
+}
+
+function buildPieChart(name,data,id){
+    
+    var w = 400,
+    h = 400,
+    margin = 40;
+    var radius = 150; //Math.min(w, h) / 2 - margin;
+    d3.select(id).selectAll("*").remove();
+
+    var svgPieChart = d3.select(id)
+                            .attr("width",w)
+                            .attr("height",h)
+
+    data = buildJson(data);
+    var keys = Object.keys(data);
+    var obj = Object.entries(data);
+
+   
+    let gElement = svgPieChart.append("g")
+        .attr("transform", "translate(" + w / 2 + "," + h / 2 + ")")
+        .attr("class","pie")
+
+    var pie = d3.pie()
+        .value(function(d) {return d[1]; });
+
+    var ordScale = d3.scaleOrdinal()
+                            .domain(keys)
+                            .range(d3.schemeDark2);
+
+    var arc = gElement
+        .selectAll("arc")
+        .data(pie(obj))
+        .enter()
+
+    var path = d3.arc()
+        .innerRadius(0)
+        .outerRadius(radius);
+                
+    arc.append("path")
+        .attr("d", path)
+        .attr("fill", 
+            function(d) { 
+                return ordScale(d.data[0]); 
+        });   
+}
+
+function buildJson(data){
+    var counts = {};
+
+    for (var i = 0; i < data.length; i++) {
+        var num = data[i];
+        counts[num] = counts[num] ? counts[num] + 1 : 1;
+    }
+    return counts;
+   
+}
 
 
 /**
