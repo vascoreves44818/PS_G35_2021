@@ -9,6 +9,8 @@ function setup(){
 
     var navTab = document.getElementById('graphicTab')
     navTab.style.visibility = 'visible';
+    var graphicControls = document.getElementById('graphicControls')
+    graphicControls.style.visibility = 'visible'
     
     data = JSON.parse(data);
     links = data.links
@@ -20,13 +22,18 @@ function setup(){
     switchLabels.addEventListener('change', function () {
         checker(this.checked)
     })
+    rangeLabelSize.addEventListener('input', changeLabelSize)
+    chargeForceRange.addEventListener('input', changeChargeForce)
+    colideForceRange.addEventListener('input', changeColideForce)
+
+
 }
 
 /////////////////// FORCE DIRECT LAYOUT ///////////////////////////
 
 const height = window.innerHeight;
 const width = window.innerWidth;
-const radius = 15;
+const radius = 20;
 let links = [], nodes = [];
 var min_zoom = 0.1;
 var max_zoom = 7;
@@ -37,8 +44,12 @@ let svg;
 let link;
 let g;
 
-const switchLabels = document.getElementById('NodeLabels')
- function init(){
+const switchLabels = document.getElementById('NodeLabelsSwitch')
+const rangeLabelSize = document.getElementById('NodeLabelsRange')
+const chargeForceRange = document.getElementById('chargeForceRange')
+const colideForceRange = document.getElementById('colideForceRange')
+
+function init(){
     svg = d3.select('#svgCanvas')
     .attr("viewBox", `${-width/2} ${-height/2} ${width*2} ${height*2}`)
     //.attr("viewBox", [0, 0, width, height]);
@@ -53,7 +64,7 @@ const switchLabels = document.getElementById('NodeLabels')
 
     svg.call(zoom);
     start();
- }
+}
 function zoomed({transform}) {
     g.attr("transform", transform);
 }
@@ -75,6 +86,38 @@ function hideLabels() {
     for (i = 0; i < labels.length; i++) {
         labels[i].setAttribute("visibility","hidden");
     }
+}
+
+function changeLabelSize(){
+    var size = rangeLabelSize.value
+    var labels = document.getElementsByClassName('labels')
+    for (i = 0; i < labels.length; i++) {
+        labels[i].style.fontSize = size;
+    }
+}
+
+function changeChargeForce(){
+    var value = chargeForceRange.value
+    simulation.force("charge", d3.forceManyBody().strength(value))
+    simulation.restart();
+}
+
+function changeColideForce(){
+    var value = colideForceRange.value
+
+    simulation
+        .force("collide", d3.forceCollide().strength(value)).alphaTarget(1)
+
+}
+function resetForces(){
+    simulation
+        .force("charge", d3.forceManyBody().strength(-100))
+        .force("collide", d3.forceCollide().radius(radius+5))
+        .on('tick',ticked)
+    simulation.restart();
+
+    chargeForceRange.value = -100;
+    colideForceRange.value = 1;
 }
   
 function color(d) {
@@ -110,8 +153,6 @@ function start() {
 
     node.append("text")
         .attr("class","labels")
-        .attr('x', 3)
-        .attr('y', 3)
         .text(d => d.name)
     
     checker(switchLabels.checked)
@@ -125,18 +166,16 @@ function start() {
         .on("drag", dragged)
         .on("end", dragended)
     );
-
-
     startSimulation();
 }
 
 function startSimulation(){
     simulation = d3.forceSimulation(nodes)
         .force("link", d3.forceLink(links).id(d => d.name))
-        .force("charge", d3.forceManyBody().strength(-100))
-        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("charge", d3.forceManyBody().strength(-500))
+        .force("center", d3.forceCenter(width /2 , height/2))
         .force("collide", d3.forceCollide().radius(radius+2))
-        .alphaTarget(0.8)
+        .alphaTarget(1)
         .on("tick", ticked);
 }
 
@@ -235,9 +274,9 @@ function dragended(d) {
 }
 
 function restartSimulation(){
-    simulation.stop();
+    /*simulation.stop();
     g.selectAll("*").remove();
-    start();
+    start();*/
 }
 
 function pauseSimulation(){
@@ -383,20 +422,24 @@ function buildTable(data,tableDiv,headers){
 }
 
 function createTables(profile,aux){
-    if(profile && profile!='auxiliaryInfo='){    
-        pData = JSON.parse(profile)
-        profileHeaders = pData.shift();
-        profileHeaders = profileHeaders.split('\t')        
-        changePage(1,'profile');
-        
+    try{
+        if(profile && profile!='auxiliaryInfo='){    
+            pData = JSON.parse(profile)
+            profileHeaders = pData.shift();
+            profileHeaders = profileHeaders.split('\t')        
+            changePage(1,'profile');
+        }
+        if(aux){
+            auxData = JSON.parse(aux)
+            auxiliaryHeaders = auxData.shift();
+            auxiliaryHeaders = auxiliaryHeaders.split('\t');
+            changePage(1,'aux');
+            
+        }
+    } catch(x){
+        console.log(x);
     }
-    if(aux){
-        auxData = JSON.parse(aux)
-        auxiliaryHeaders = auxData.shift();
-        auxiliaryHeaders = auxiliaryHeaders.split('\t');
-        changePage(1,'aux');
-        
-    }
+    
    
 }
 

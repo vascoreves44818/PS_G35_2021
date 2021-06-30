@@ -41,8 +41,9 @@ function logSubmit(event){
 
   Promise.all([data,profileData,auxiliaryData])
     .then((values) => {
-        const XHR = new XMLHttpRequest()
+        const XHR = new XMLHttpRequest();
         const FD  = new FormData();
+        
         FD.append('datasetname', datasetname)
         if(values[0]){
           FD.append('tree', values[0]);

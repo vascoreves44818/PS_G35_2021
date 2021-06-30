@@ -32,4 +32,21 @@ function parse(json){
     
 }
 
-module.exports = { parse }
+function parseTables(data){
+    return data.includes('\r\n') ? splitByline(data) : splitByTab(data);
+
+}
+
+function splitByline(data){
+    data = data.replaceAll('\t\t', '\t-\t')
+    data = data.replaceAll('\t\r\n','\t-\r\n')
+    data = data.replaceAll(' ','-')
+    var toRet =  data.split('\r\n');
+    return toRet;
+}
+
+function splitByTab(data){
+
+}
+
+module.exports = { parse, parseTables }

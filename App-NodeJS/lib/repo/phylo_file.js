@@ -25,12 +25,12 @@ function createTables(profile,auxiliary){
     let array = [];
     let pd,ad;
     if(profile){
-        pd = profile.split('\r\n') 
+        pd = parser.parseTables(profile);
         array.push(pd)
     }
      
     if(auxiliary){
-        ad = auxiliary.split('\r\n') 
+        ad = parser.parseTables(auxiliary)
         array.push(ad)
     }
     return array;
