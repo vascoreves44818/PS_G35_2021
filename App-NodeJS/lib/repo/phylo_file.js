@@ -4,7 +4,7 @@ const newick = require("newick");
 const parser = require('./../parsing/parser')
 
 
-function getJson(tree){
+function getJson(tree, datasetname, tableElements){
     return new Promise((resolve, reject) => {
         var data;
         if(!tree) reject('No data inserted!')
@@ -13,41 +13,10 @@ function getJson(tree){
         else
             data = readNewickTree(tree)
 
-        const renderDocs = parser.parse(data)
+        const renderDocs = parser.parse(data,datasetname,tableElements)
         resolve(renderDocs)
 
-    });
-    
-    
-}
-
-function createTables(profile,auxiliary){
-    let array = [];
-    let pd,ad;
-    if(profile){
-        pd = parser.parseTables(profile);
-        array.push(pd)
-    }
-     
-    if(auxiliary){
-        ad = parser.parseTables(auxiliary)
-        array.push(ad)
-    }
-    return array;
-}
-
-function readProfile(profileData){    
-    return new Promise((resolve, reject) => {
-        let tableElements = profileData.split('\r\n')        
-        resolve(tableElements)
-    });
-}
-
-function readAuxiliar(auxData){    
-    return new Promise((resolve, reject) => {
-        let tableElements = auxData.split('\r\n')
-        resolve(tableElements)
-    });
+    });   
 }
 
 /* Returns array with trees in JSON*/
@@ -81,6 +50,28 @@ function readNexusTree(tree){
     })
     return arr;
 }
+
+function createTables(profile,auxiliary){
+    return new Promise((resolve,reject) => {
+        let array = [];
+        let pd,ad;
+       
+        if(profile){
+            pd = parser.parseTables(profile);
+            array.push(pd)
+        }
+            
+        if(auxiliary){
+            ad = parser.parseTables(auxiliary)
+            array.push(ad)
+        }
+        resolve(array);  
+    })
+    
+}
+
+
+
 
 
 module.exports = { getJson,createTables }

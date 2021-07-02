@@ -121,9 +121,10 @@ function resetForces(){
 }
   
 function color(d) {
-    return d._branchset ? "#3182bd" // collapsed package
+    return d.isCollapsed ? "#3182bd" : "#c6dbef";
+    /*return d._branchset ? "#3182bd" // collapsed package
             : d.branchset ? "#c6dbef" // expanded package
-            : "#fd8d3c"; // leaf node
+            : "#fd8d3c"; // leaf node */
 }
 
 function start() {
@@ -134,7 +135,7 @@ function start() {
         .data(links)
         .enter()
         .append("line")
-        .attr("id", d => (d.source+d.target))
+        .attr("id", d => (d.source+'-'+d.target))
 
     node = g.append("g")
         .attr("class", "nodes")
@@ -144,16 +145,16 @@ function start() {
 
     
     node
-        .attr("id", d => d.name+"_node")
+        .attr("id", d => d.key+"_node")
         .append("circle")
-        .attr("id", d => d.name)
+        .attr("id", d => d.key)
         .attr("r", radius)
         .on('click', click)
         
 
     node.append("text")
         .attr("class","labels")
-        .text(d => d.name)
+        .text(d => d.key)
     
     checker(switchLabels.checked)
  
@@ -171,7 +172,7 @@ function start() {
 
 function startSimulation(){
     simulation = d3.forceSimulation(nodes)
-        .force("link", d3.forceLink(links).id(d => d.name))
+        .force("link", d3.forceLink(links).id(d => d.key))
         .force("charge", d3.forceManyBody().strength(-500))
         .force("center", d3.forceCenter(width /2 , height/2))
         .force("collide", d3.forceCollide().radius(radius+2))
@@ -180,31 +181,41 @@ function startSimulation(){
 }
 
 function click(event, node){
-    console.log("CLICKED")
+    console.log("NODE CLICKED")
+    var isNodeLeaf = true;
+    var isCollapsing = node.isCollapsed ? false : true;
+    node.isCollapsed = isCollapsing;
+    
+    recurse(node.key)
+    
 
-    node.collapsed = node.collapsed ? false : true;
-
-    recurse(node.name)
-
-    function recurse(name){
+    function recurse(key){
         links.forEach(n => {
             var source = n.source;
             var target = n.target;
-            if(source.name == name){
-                recurse(target.name)
-                //GET NODE ELEMENT
-                var nd = document.getElementById(target.name+"_node");
+            if(source.key == key){
+                //CHECK IF IS LEAF NODE
+                isNodeLeaf = false;
+
+                //GET NEXT NODE ELEMENT
+                var nd = document.getElementById(target.key+"_node");
                 var elements = nd.children
                 
                 //CHANGE VISIBILITY TO NODE AND TEXT
                 for(let i = 0; i<elements.length ; ++i){
-                    elements[i].collapsed = elements[i].collapsed ? false : true;
                     changeVisibility(elements[i])
                 }
 
                 //CAHNGE VISIBILITY TO LINK
-                var lk = document.getElementById(source.name+target.name);
+                var lk = document.getElementById(source.key+'-'+target.key);
                 changeVisibility(lk)
+
+                //check if next node is already collapsed
+                if(isCollapsing && !target.isCollapsed){
+                    recurse(target.key)
+                } else if (!isCollapsing && !target.isCollapsed){
+                    recurse(target.key)
+                }
             }
         })
     
@@ -226,16 +237,9 @@ function click(event, node){
         
     }
 
-    //CHANGE COLOR FOR COLLAPSED PACKAGES
-    if(node.branchset){
-        node._branchset = node.branchset
-        node.branchset = null;
-    } else {
-        node.branchset = node._branchset;
-        node._branchset = null;
-    }
-
-    var changeColor = document.getElementById(node.name)
+    if(isNodeLeaf) node.isCollapsed = !node.isCollapsed;
+    
+    var changeColor = document.getElementById(node.key)
     changeColor.style.fill = color(node)
     
 }

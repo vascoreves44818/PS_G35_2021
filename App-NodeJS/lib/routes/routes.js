@@ -3,6 +3,7 @@ const parser = require('./../parsing/parser')
 const qs = require('querystring')
 
 const Router = require('express').Router
+const { table } = require('console')
 const router = Router()
 var fileInfo;
 
@@ -29,23 +30,26 @@ function getFileFromPost(req,res,next){
     const profileData = data.profileData;
     const auxiliaryData = data.auxiliaryData;
     
-    const tableElements = phylo_file.createTables(profileData,auxiliaryData)
-    phylo_file.getJson(tree)
-        .then(treeInfo => {
-            var pd = tableElements[0];
-            var ad = tableElements[1];
-            fileInfo = { 
-                'json': JSON.stringify(treeInfo),
-                profileData: pd ? JSON.stringify(pd) : pd,
-                auxiliaryData: ad ? JSON.stringify(ad) : ad
-            }
-            res.end(JSON.stringify('File read with success!'));
+
+    phylo_file.createTables(profileData,auxiliaryData)
+        .then(tableElements => {
+            phylo_file.getJson(tree,datasetname,tableElements)
+                .then(treeInfo => {
+                    var pd = tableElements[0];
+                    var ad = tableElements[1];
+                    fileInfo = { 
+                        json: JSON.stringify(treeInfo),
+                        profileData: pd ? JSON.stringify(pd) : pd,
+                        auxiliaryData: ad ? JSON.stringify(ad) : ad
+                    }
+                    res.end(JSON.stringify('File read with success!'));
+                })
         })
-        .catch(next)     
+        .catch(next)
+         
 }
 
 function visualizationFromFile(req, res, next) {
-    var t = fileInfo;
     res.render('visualization',fileInfo)    
 }
 
