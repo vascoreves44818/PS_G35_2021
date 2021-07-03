@@ -19,10 +19,16 @@ function setup(){
     init();
     createTables(pd,ad);
 
-    switchLabels.addEventListener('change', function () {
+    switchNodeLabels.addEventListener('change', function () {
         checker(this.checked)
     })
-    rangeLabelSize.addEventListener('input', changeLabelSize)
+    rangeNodeLabelSize.addEventListener('input', changeNodeLabelSize)
+
+    switchLinkLabels.addEventListener('change', function () {
+        checkerLinks(this.checked)
+    })
+    rangeLinkLabelSize.addEventListener('input', changeLinkLabelSize)
+
     chargeForceRange.addEventListener('input', changeChargeForce)
     colideForceRange.addEventListener('input', changeColideForce)
 
@@ -42,17 +48,25 @@ let pinned = false;
 let simulation;
 let svg;
 let link;
+let linkText;
 let g;
+var colorExpand = "#c6dbef";
+var colorCollapse = "#3182bd";
+const nodelabels = 'nodelabels';
+const linklabels ='linklabels';
 
-const switchLabels = document.getElementById('NodeLabelsSwitch')
-const rangeLabelSize = document.getElementById('NodeLabelsRange')
+const switchNodeLabels = document.getElementById('NodeLabelsSwitch')
+const rangeNodeLabelSize = document.getElementById('NodeLabelsRange')
+
+const switchLinkLabels = document.getElementById('LinkLabelsSwitch')
+const rangeLinkLabelSize = document.getElementById('LinkLabelsRange')
+
 const chargeForceRange = document.getElementById('chargeForceRange')
 const colideForceRange = document.getElementById('colideForceRange')
 
 function init(){
     svg = d3.select('#svgCanvas')
-    .attr("viewBox", `${-width/2} ${-height/2} ${width*2} ${height*2}`)
-    //.attr("viewBox", [0, 0, width, height]);
+        .attr("viewBox", [0, 0, width, height]);
 
     link = svg.selectAll(".link"), node = svg.selectAll(".node");
     g = svg.append("g");
@@ -65,36 +79,116 @@ function init(){
     svg.call(zoom);
     start();
 }
+
 function zoomed({transform}) {
     g.attr("transform", transform);
 }
 
+function start() {
+
+    link = g.append("g")
+        .attr("class", "link")
+        .selectAll('g')
+        .data(links)
+        .enter()
+        .append("g")
+        .attr("class", "links")
+        .attr("id", d => (d.source+'-'+d.target))
+        .append("line")
+        .attr("class", "line")
+
+    linkText = g.selectAll(".links")
+        .append("text")
+        .attr("class", linklabels)
+        .attr("dy", ".35em")
+        .text(d=>d.value);
+
+    node = g.append("g")
+        .attr("class", "nodes")
+        .selectAll("g")
+        .data(nodes)
+        .join("g")
+
+    node
+        .attr("id", d => d.key+"_node")
+        .append("circle")
+        .attr("id", d => d.key)
+        .attr("r", radius)
+        .on('click', click)
+        
+
+    node.append("text")
+        .attr("class",nodelabels)
+        .text(d => d.key)
+        
+    
+    checker(switchNodeLabels.checked)
+    checkerLinks(switchLinkLabels.checked)
+ 
+    node.selectAll("circle")
+        .style("fill", color);
+
+    node.call(d3
+        .drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended)
+    );
+    startSimulation();
+}
+
+function startSimulation(){
+    var linkForce = d3.forceLink(links);
+    linkForce.id(d => d.key);
+    linkForce.distance(d => d.value);
+
+    simulation = d3.forceSimulation(nodes)
+        .force("link", linkForce)
+        .force("charge", d3.forceManyBody().strength(-500))
+        .force("center", d3.forceCenter(width /2 , height/2))
+        .force("collide", d3.forceCollide().radius(radius+2))
+        .alphaTarget(1)
+        .on("tick", ticked);
+}
+
+///// GRAPHIC LABELS //////
 function checker(checked) {
-    checked ? showLabels() : hideLabels()
+    checked ? showLabels(nodelabels) : hideLabels(nodelabels)
+}
+
+function checkerLinks(checked) {
+    checked ? showLabels(linklabels) : hideLabels(linklabels)
 }
   
-function showLabels() {
-    var labels = document.getElementsByClassName('labels')
+function showLabels(className) {
+    var labels = document.getElementsByClassName(className)
     for (i = 0; i < labels.length; i++) {
-        if(!labels[i].collapsed)
+        if(!labels[i].isCollapsed)
             labels[i].setAttribute("visibility","visible");
     }
 }
 
-function hideLabels() {
-    var labels = document.getElementsByClassName('labels')
+function hideLabels(className) {
+    var labels = document.getElementsByClassName(className)
     for (i = 0; i < labels.length; i++) {
-        labels[i].setAttribute("visibility","hidden");
+        if(!labels[i].isCollapsed)
+            labels[i].setAttribute("visibility","hidden");
     }
 }
 
-function changeLabelSize(){
-    var size = rangeLabelSize.value
-    var labels = document.getElementsByClassName('labels')
-    for (i = 0; i < labels.length; i++) {
-        labels[i].style.fontSize = size;
-    }
+function changeNodeLabelSize(){
+    var size = rangeNodeLabelSize.value
+    node.selectAll("text")
+        .style("font-size",size)
 }
+
+function changeLinkLabelSize(){
+    var size = rangeLinkLabelSize.value
+    linkText
+        .style("font-size",size)
+}
+
+///// GRAPHIC FORCES ////////
 
 function changeChargeForce(){
     var value = chargeForceRange.value
@@ -121,64 +215,13 @@ function resetForces(){
 }
   
 function color(d) {
-    return d.isCollapsed ? "#3182bd" : "#c6dbef";
+    return d.isCollapsed ? colorCollapse : colorExpand;
     /*return d._branchset ? "#3182bd" // collapsed package
             : d.branchset ? "#c6dbef" // expanded package
             : "#fd8d3c"; // leaf node */
 }
 
-function start() {
 
-    link = g.append("g")
-        .attr("class", "link")
-        .selectAll("line")
-        .data(links)
-        .enter()
-        .append("line")
-        .attr("id", d => (d.source+'-'+d.target))
-
-    node = g.append("g")
-        .attr("class", "nodes")
-        .selectAll("g")
-        .data(nodes)
-        .join("g")
-
-    
-    node
-        .attr("id", d => d.key+"_node")
-        .append("circle")
-        .attr("id", d => d.key)
-        .attr("r", radius)
-        .on('click', click)
-        
-
-    node.append("text")
-        .attr("class","labels")
-        .text(d => d.key)
-    
-    checker(switchLabels.checked)
- 
-    node.selectAll("circle")
-        .style("fill", color);
-
-    node.call(d3
-        .drag()
-        .on("start", dragstarted)
-        .on("drag", dragged)
-        .on("end", dragended)
-    );
-    startSimulation();
-}
-
-function startSimulation(){
-    simulation = d3.forceSimulation(nodes)
-        .force("link", d3.forceLink(links).id(d => d.key))
-        .force("charge", d3.forceManyBody().strength(-500))
-        .force("center", d3.forceCenter(width /2 , height/2))
-        .force("collide", d3.forceCollide().radius(radius+2))
-        .alphaTarget(1)
-        .on("tick", ticked);
-}
 
 function click(event, node){
     console.log("NODE CLICKED")
@@ -203,12 +246,18 @@ function click(event, node){
                 
                 //CHANGE VISIBILITY TO NODE AND TEXT
                 for(let i = 0; i<elements.length ; ++i){
+                    elements[i].isCollapsed = isCollapsing;
                     changeVisibility(elements[i])
                 }
 
                 //CAHNGE VISIBILITY TO LINK
                 var lk = document.getElementById(source.key+'-'+target.key);
-                changeVisibility(lk)
+                var linkElements = lk.children
+
+                for(let i = 0; i<linkElements.length ; ++i){
+                    linkElements[i].isCollapsed = isCollapsing;
+                    changeVisibility(linkElements[i])
+                }
 
                 //check if next node is already collapsed
                 if(isCollapsing && !target.isCollapsed){
@@ -228,7 +277,7 @@ function click(event, node){
         if (visibility==null || visibility=='visible'){
             element.setAttribute("visibility","hidden")
         } else {
-            if(type=='labels' && !switchLabels.checked)
+            if((type==nodelabels || type==linklabels) && !switchNodeLabels.checked)
                 element.setAttribute("visibility","hidden")
             else
                 element.setAttribute("visibility","visible")
@@ -251,6 +300,13 @@ function ticked() {
         .attr("x2", d => d.target.x)
         .attr("y2", d => d.target.y);
 
+    linkText
+        .attr("x", function(d) {
+            return ((d.source.x + d.target.x)/2);
+        })
+        .attr("y", function(d) {
+            return ((d.source.y + d.target.y)/2);
+        });
      
     node
         .attr("transform", function(d) {
