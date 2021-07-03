@@ -4,20 +4,29 @@ function setup(){
     var script = document.getElementById('forceDirectedLayout');
 
     var data = script.getAttribute('json');
-    var pd = script.getAttribute('profileInfo');
-    var ad = script.getAttribute('auxiliaryInfo');
 
     var navTab = document.getElementById('graphicTab')
     navTab.style.visibility = 'visible';
     var graphicControls = document.getElementById('graphicControls')
     graphicControls.style.visibility = 'visible'
     
-    data = JSON.parse(data);
+    try{
+        data = JSON.parse(data);
+    } catch(x){
+        console.log(x);
+        alert('Problem reading information. Insert again.')
+    }
+
     links = data.links
     nodes = data.nodes
+    metadata = data.metadata
+    schemeGenes = data.schemeGenes
+    subsetProfiles =  data.subsetProfiles;
+    isolateData = data.isolatesData;
 
-    init();
-    createTables(pd,ad);
+    init(); 
+    setGraphicFilters();
+    createTables();
 
     switchNodeLabels.addEventListener('change', function () {
         checker(this.checked)
@@ -32,7 +41,8 @@ function setup(){
     chargeForceRange.addEventListener('input', changeChargeForce)
     colideForceRange.addEventListener('input', changeColideForce)
 
-
+    profileColorFilter.addEventListener('input', changeColorByProfile)
+    isolateColorFilter.addEventListener('input', changeColorByIsolate)
 }
 
 /////////////////// FORCE DIRECT LAYOUT ///////////////////////////
@@ -41,6 +51,8 @@ const height = window.innerHeight;
 const width = window.innerWidth;
 const radius = 20;
 let links = [], nodes = [];
+let metadata = [], schemeGenes = [];
+let subsetProfiles = [], isolateData =[];
 var min_zoom = 0.1;
 var max_zoom = 7;
 let paused = false;
@@ -55,6 +67,10 @@ var colorCollapse = "#3182bd";
 const nodelabels = 'nodelabels';
 const linklabels ='linklabels';
 
+
+const colorSequence = d3.interpolateSinebow;
+
+
 const switchNodeLabels = document.getElementById('NodeLabelsSwitch')
 const rangeNodeLabelSize = document.getElementById('NodeLabelsRange')
 
@@ -63,6 +79,9 @@ const rangeLinkLabelSize = document.getElementById('LinkLabelsRange')
 
 const chargeForceRange = document.getElementById('chargeForceRange')
 const colideForceRange = document.getElementById('colideForceRange')
+
+const profileColorFilter = document.getElementById('profileColorFilter');
+const isolateColorFilter = document.getElementById('isolateColorFilter');
 
 function init(){
     svg = d3.select('#svgCanvas')
@@ -113,7 +132,7 @@ function start() {
         .attr("id", d => d.key+"_node")
         .append("circle")
         .attr("id", d => d.key)
-        .attr("r", radius)
+        .attr("r",  radius)
         .on('click', click)
         
 
@@ -213,21 +232,27 @@ function resetForces(){
     chargeForceRange.value = -100;
     colideForceRange.value = 1;
 }
-  
-function color(d) {
-    return d.isCollapsed ? colorCollapse : colorExpand;
-    /*return d._branchset ? "#3182bd" // collapsed package
-            : d.branchset ? "#c6dbef" // expanded package
-            : "#fd8d3c"; // leaf node */
+ 
+function color(d,value) {
+    if(d.isCollapsed)
+        return colorCollapse;
+    if(value){
+        var x = value(d);
+        return x ? colorSequence(1/x) : colorExpand;
+    }
+    return colorExpand;
+
+
 }
-
-
 
 function click(event, node){
     console.log("NODE CLICKED")
+    var changeColor = document.getElementById(node.key)
+
     var isNodeLeaf = true;
     var isCollapsing = node.isCollapsed ? false : true;
     node.isCollapsed = isCollapsing;
+    
     
     recurse(node.key)
     
@@ -286,10 +311,17 @@ function click(event, node){
         
     }
 
-    if(isNodeLeaf) node.isCollapsed = !node.isCollapsed;
+    if(isNodeLeaf){ node.isCollapsed = !node.isCollapsed; }
+    else if(isCollapsing){ 
+        node.previousColor = changeColor.style.fill;
+        changeColor.style.fill = color(node)
+    }else{
+        changeColor.style.fill = node.previousColor
+        node.previousColor = null;
+    }
     
-    var changeColor = document.getElementById(node.key)
-    changeColor.style.fill = color(node)
+    
+    
     
 }
 
@@ -417,6 +449,70 @@ function pinNodes(){
         
 }
 
+
+//////// DATA FILTERS /////////
+
+function setGraphicFilters(){
+
+    if(schemeGenes){
+        schemeGenes.forEach( x => {
+            var opt = document.createElement('option');
+            opt.value = x;
+            opt.innerHTML = x;
+            profileColorFilter
+                .append(opt);
+        })
+    }
+        
+    if(metadata){
+        metadata.forEach( x => {
+            var opt = document.createElement('option');
+            opt.value = x;
+            opt.innerHTML = x;
+            isolateColorFilter
+                .append(opt);
+        })
+    }
+    
+}
+
+function changeColorByProfile(){
+     
+    var key = profileColorFilter.value;
+    var index = schemeGenes.indexOf(key);
+    var value = function(d){ 
+        if(d.profile) 
+            return d.profile[index] 
+        return null;
+    }
+
+    node.selectAll("circle")
+        .style("fill",x => color(x,value));
+    
+}
+
+function changeColorByIsolate(){
+    var numbers =[];
+    let id = 1;
+    var key = isolateColorFilter.value;
+    var index = metadata.indexOf(key);
+    var value = function(d){ 
+        if(d.isolates){
+            var iso = d.isolates[index] 
+            if(!numbers[iso]){
+                numbers[iso] = id;
+                id++; 
+            }
+            return numbers[iso];
+
+        } 
+        return null;
+    }
+
+    node.selectAll("circle")
+        .style("fill",x => color(x,value));
+
+}
 ///////////////////// TABLES ////////////////////////////////
 
 var current_page_profile = 1;
@@ -425,10 +521,6 @@ var records_per_page = 10;
 let obj;
 let pData;
 let auxData;
-let profileHeaders;
-let auxiliaryHeaders;
-
-
 
 /**
  * 
@@ -463,11 +555,10 @@ function buildTable(data,tableDiv,headers){
     //CREATE TABLE BODY
     var tableBody = document.createElement('tbody');
     data.forEach(row => {
-        var items = row.split('\t');
         var tableTR = document.createElement('tr');
         tableBody.appendChild(tableTR);
 
-        items.forEach(element => {
+        row.forEach(element => {
             var tableElement = document.createElement('td')
             tableElement.innerHTML=element;
             tableElement.setAttribute('id',element);
@@ -481,18 +572,12 @@ function buildTable(data,tableDiv,headers){
     return;
 }
 
-function createTables(profile,aux){
+function createTables(){
     try{
-        if(profile && profile!='auxiliaryInfo='){    
-            pData = JSON.parse(profile)
-            profileHeaders = pData.shift();
-            profileHeaders = profileHeaders.split('\t')        
+        if(subsetProfiles && subsetProfiles.length>0){    
             changePage(1,'profile');
         }
-        if(aux){
-            auxData = JSON.parse(aux)
-            auxiliaryHeaders = auxData.shift();
-            auxiliaryHeaders = auxiliaryHeaders.split('\t');
+        if(isolateData && isolateData.length>0){
             changePage(1,'aux');
             
         }
@@ -512,8 +597,8 @@ function prevPageProfile()
 }
 function nextPageProfile()
 {
-    if(pData){
-        obj = pData;
+    if(subsetProfiles && subsetProfiles.length>0){    
+        obj = subsetProfiles;
         if (current_page_profile < numPages()) {
             current_page_profile++;
             changePage(current_page_profile,'profile');
@@ -530,8 +615,8 @@ function prevPageAux()
 }
 function nextPageAux()
 {
-    if(auxData){ 
-        obj = auxData;
+    if(isolateData && isolateData.length>0){
+        obj = isolateData;
         if (current_page_aux < numPages()) {
             current_page_aux++;
             changePage(current_page_aux,'aux');
@@ -545,32 +630,41 @@ function changePage(page, type)
     var div;
     var btn_next, btn_prev;
     var headers;
+    var dataToShow = [];
+    
+    
 
     if(type == 'profile'){
         div = document.getElementById('profileTabel')
         btn_next = document.getElementById("btn_next-profile");
         btn_prev = document.getElementById("btn_prev_profile");
         page_span = document.getElementById("pageProfile");
-        obj = pData;
-        headers = profileHeaders
+        obj = subsetProfiles;
+        headers = schemeGenes;
+        if (page < 1) page = 1;
+        if (page > numPages()) page = numPages();
+        for (var i = (page-1) * records_per_page; i < (page * records_per_page) && i<obj.length; i++) {
+            dataToShow.push(obj[i].profile);
+        }
     }
     else {
         div = document.getElementById('auxTable');
         btn_next = document.getElementById("btn_next-aux");
         btn_prev = document.getElementById("btn_prev_aux");
         page_span = document.getElementById("pageAux");
-        obj = auxData;
-        headers = auxiliaryHeaders
+        obj = isolateData;
+        headers = metadata;
+        if (page < 1) page = 1;
+        if (page > numPages()) page = numPages();
+        for (var i = (page-1) * records_per_page; i < (page * records_per_page) && i<obj.length; i++) {
+            dataToShow.push(obj[i].isolate);
+        }
     }
         
-    // Validate page
-    if (page < 1) page = 1;
-    if (page > numPages()) page = numPages();
+   
      
-    var dataToShow = []
-    for (var i = (page-1) * records_per_page; i < (page * records_per_page) && i<obj.length; i++) {
-        dataToShow.push(obj[i]);
-    }
+    
+    
 
     page_span.innerHTML = page;
 
@@ -601,20 +695,18 @@ function newPieChart(event){
     var path = event.path;
     var divTabel = document.getElementById('profileTablePanel')
     if(path.includes(divTabel)){
-        var index = profileHeaders.indexOf(header);
+        var index = schemeGenes.indexOf(header);
         var elements = []
-        pData.forEach( row => {
-            var items = row.split('\t');
-            elements.push(items[index]);
+        subsetProfiles.forEach( row => {
+            elements.push(row.profile[index]);
         })
         buildPieChart(header, elements,'#profilePieChartSVG')
         
     } else {
-        var index = auxiliaryHeaders.indexOf(header);
+        var index = metadata.indexOf(header);
         var elements = []
-        auxData.forEach( row => {
-            var items = row.split('\t');
-            elements.push(items[index]);
+        isolateData.forEach( row => {
+            elements.push(row.isolate[index]);
         })
         buildPieChart(header, elements,'#auxPieChartSVG')
     }  

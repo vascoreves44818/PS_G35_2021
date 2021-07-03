@@ -122,15 +122,15 @@
                             
                             <hr style="width:100%" size="5"  color="white">
 
-                            <ul class="form-control " id="graphicControls" style="visibility: hidden"> 
+                            <ul  id="graphicControls" style="visibility: hidden" > 
                                 <!-- DATASET INFO -->
-                                <li class="form-control mb-3">
+                                <div class=" mb-3"  style="width: 100%;">
                                     <!-- Button trigger modal -->
-                                    <button type="button" class="btn btn-LIGHT w-100" data-bs-toggle="modal" data-bs-target="#datasetInfo">
+                                    <button type="button" class="btn btn-LIGHT w-100" data-bs-toggle="modal" data-bs-target="#datasetInfo"  style="width: 100%;">
                                     DATASET INFO
                                     </button>
                                     <!-- Modal -->
-                                    <div class="modal fade" id="datasetInfo" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                    <div class="modal fade" id="datasetInfo" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true"  style="width: 100%;">
                                         <div class="modal-dialog">
                                             <div class="modal-content">
                                             <div class="modal-header">
@@ -146,22 +146,31 @@
                                             </div>
                                         </div>
                                     </div>
-                                </li>
+                                </div>
                                 <!-- DATA FILTERS -->
-                                <li class="form-control mb-3">
-                                    <button class="form-control btn btn-LIGHT" type="button" data-toggle="collapse" data-target="#collapsedGraphic" aria-expanded="false" aria-controls="collapsedGraphic">
+                                <div class="mb-3">
+                                    <button class="btn btn-LIGHT" type="button" data-toggle="collapse" data-target="#collapsedGraphic" aria-expanded="false" aria-controls="collapsedGraphic" style="width: 100%;">
                                         DATA FILTERS
                                     </button>
-                                    <div class="collapse" id="collapsedGraphic">
-                                        <div class="card card-body">
-                                        </div>
+                                    <div class="mt-3 btn-group-vertical collapse" id="collapsedGraphic"  style="width: 100%;">
+                                        <button class="mb-1 btn btn-secondary" type="button" data-toggle="collapse" data-target="#colorFilters" aria-expanded="false"  style="width: 100%;">COLORS</button>
+                                            <div class="collapse" id="colorFilters">
+                                                <label class="mt-3 form-check-label" for="profileColorFilter">By profile:</label>
+                                                <select id="profileColorFilter" class="form-select" aria-label="Default select example">
+                                                    <option selected>None</option>
+                                                </select>
+                                                <label class="mt-3 form-check-label" for="isolateColorFilter">By isolate:</label>
+                                                <select id="isolateColorFilter" class="form-select" aria-label="Default select example">
+                                                    <option selected>None</option>
+                                                </select>
+                                            </div>
                                     </div>
-                                </li>
+                                </div>
                                 <!-- GRAPHIC FILTERS -->
-                                <li class="form-control mb-3">
-                                    <button class="form-control btn btn-LIGHT" type="button" data-toggle="collapse" data-target="#collapsedFilters" aria-expanded="false" aria-controls="collapsedFilters">GRAPHIC FILTERS</button>
-                                    <div class="form-control mt-3 btn-group-vertical collapse" id="collapsedFilters">
-                                        <button class="form-control mb-1 btn btn-secondary" type="button" data-toggle="collapse" data-target="#nodeFilters" aria-expanded="false">NODES</button>
+                                <div class="mb-3"  style="width: 100%;">
+                                    <button class=" btn btn-LIGHT" type="button" data-toggle="collapse" data-target="#collapsedFilters" aria-expanded="false" aria-controls="collapsedFilters" style="width: 100%;">GRAPHIC FILTERS</button>
+                                    <div class="mt-3 btn-group-vertical collapse" id="collapsedFilters"  style="width: 100%;">
+                                        <button class="mb-1 btn btn-secondary" type="button" data-toggle="collapse" data-target="#nodeFilters" aria-expanded="false"  style="width: 100%;">NODES</button>
                                             <div class="collapse" id="nodeFilters">
                                                 <div class="mt-3 form-check form-switch">
                                                     <label class="form-check-label" for="NodeLabelsSwitch">Node Labels</label>
@@ -170,7 +179,7 @@
                                                     <label for="NodeLabelsRange" class="form-label">Node labels size:</label>
                                                     <input type="range" class="form-range" min="10" max="50" id="NodeLabelsRange" value="10">
                                             </div>    
-                                        <button class="form-control mb-1 btn btn-secondary" type="button" data-toggle="collapse" data-target="#linkFilters" aria-expanded="false" >LINKS</button>
+                                        <button class=" mb-1 btn btn-secondary" type="button" data-toggle="collapse" data-target="#linkFilters" aria-expanded="false" style="width: 100%;" >LINKS</button>
                                             <div class="collapse" id="linkFilters">
                                                 <div class="mt-3 form-check form-switch">
                                                     <label class="form-check-label" for="LinkLabelsSwitch">Link Labels</label>
@@ -179,7 +188,7 @@
                                                     <label for="LinkLabelsRange" class="form-label">Link labels size:</label>
                                                     <input type="range" class="form-range" min="10" max="50" id="LinkLabelsRange" value="10">
                                             </div>
-                                        <button class="form-control mb-1 btn btn-secondary" type="button" data-toggle="collapse" data-target="#graphFilters" aria-expanded="false">LAYOUT</button>
+                                        <button class=" mb-1 btn btn-secondary" type="button" data-toggle="collapse" data-target="#graphFilters" aria-expanded="false" style="width: 100%;">LAYOUT</button>
                                             <div class="collapse" id="graphFilters">
                                                 <label for="chargeForceRange" class="form-label">Charge force:</label>
                                                 <input type="range" class="form-range" min="-300" max="0" id="chargeForceRange" value="-100">
@@ -190,7 +199,7 @@
                                                 <button class="form-control btn btn-sm btn-light" type="button" onclick="resetForces()">RESET</button>
                                             </div>
                                     </div>
-                                </li>
+                                </div>
                             </ul> 
                             
                             

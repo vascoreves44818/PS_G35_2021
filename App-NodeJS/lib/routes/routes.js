@@ -35,12 +35,10 @@ function getFileFromPost(req,res,next){
         .then(tableElements => {
             phylo_file.getJson(tree,datasetname,tableElements)
                 .then(treeInfo => {
-                    var pd = tableElements[0];
-                    var ad = tableElements[1];
+  //                  treeInfo.profileData = tableElements[0];
+//                    treeInfo.isolateData = tableElements[1];
                     fileInfo = { 
                         json: JSON.stringify(treeInfo),
-                        profileData: pd ? JSON.stringify(pd) : pd,
-                        auxiliaryData: ad ? JSON.stringify(ad) : ad
                     }
                     res.end(JSON.stringify('File read with success!'));
                 })

@@ -5,6 +5,7 @@
     "@tarp/require": "^1.4.3",
     "biojs-io-newick": "^1.5.0",
     "body-parser": "^1.19.0",
+    "d3-scale-chromatic": "^3.0.0",
     "d3-zoom": "^3.0.0",
     "esprima": "^4.0.1",
     "express": "^4.17.1",

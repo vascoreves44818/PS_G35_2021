@@ -37,31 +37,66 @@ function parse(json,datasetname,tableElements){
     jsonToRet.links = links; 
     jsonToRet.dataset_name = [];
     jsonToRet.data_type = [];
-    jsonToRet.scheme_genes = [];
+    jsonToRet.schemeGenes = [];
     jsonToRet.metadata = [];
+    jsonToRet.subsetProfiles = [];
+    jsonToRet.isolatesData = [];
 
-    if(datasetname)  
+
+    try{
+        if(datasetname)  
         jsonToRet.dataset_name.push(datasetname)
     else
         jsonToRet.dataset_name.push('UNKNOWN_DATASET')
 
-    if(tableElements){
-        if(tableElements[0]){
-            var profiles = tableElements[0]
-            var headers = profiles[0].split('\t');
-            jsonToRet.data_type.push(headers[0])
-            jsonToRet.scheme_genes = headers;
-        }else{
-            jsonToRet.scheme_genes.push('UNKNOWN_SCHEME_GENES');
-        }
+    if(tableElements && tableElements.length>0){
+        var profiles = tableElements[0];
+        var isolates = tableElements[1];
 
-        if(tableElements[1]){
-            var isolates = tableElements[1]
-            var elements = isolates[0].split('\t');
-            jsonToRet.metadata = elements;
-        } else {
-            jsonToRet.metadata.push('UNKNOWN_METADATA');
+        if(profiles && profiles!='auxiliaryInfo='){
+            var profileHeaders = profiles.shift();
+            profileHeaders = profileHeaders.split('\t')
+            //data_type
+            jsonToRet.data_type.push(profileHeaders[0])
+            //scheme_genes
+            jsonToRet.schemeGenes = profileHeaders;
+            
+            //subsetprofile
+            jsonToRet.subsetProfiles = [];
+            for(let i= 0; i< profiles.length;++i){
+                var toRet = {};
+                toRet.profile = profiles[i].split('\t');
+                jsonToRet.subsetProfiles.push(toRet);
+            }
+
+            //profiles
+            for(let i= 0; i< profiles.length;++i){
+                var values = profiles[i].split('\t');
+                var n = nodes.find(x => x.key == values[0])
+                if(n) n.profile = values;  
+            }
         }
+        if(isolates){
+            //metadata
+            var headers = isolates.shift();
+            headers = headers.split('\t');
+            jsonToRet.metadata = headers;
+
+            //isolateData
+            for(let i= 0; i< isolates.length;++i){
+                var toRet = {};
+                toRet.isolate = isolates[i].split('\t');
+                jsonToRet.isolatesData.push(toRet);
+            }
+
+            //isolates
+            for(let i= 0; i< isolates.length;++i){
+                var values = isolates[i].split('\t');
+                var n = nodes.find(x => x.key == values[0])
+                if(n) n.isolates = values;  
+            }
+
+        } 
     } else {
         jsonToRet.data_type.push('UNKNOWN_DATA_TYPE');
         jsonToRet.scheme_genes.push('UNKNOWN_SCHEME_GENES');
@@ -69,6 +104,14 @@ function parse(json,datasetname,tableElements){
     }
     
     return jsonToRet;
+    } catch(x){
+        console.log(x)
+        jsonToRet = {};
+        jsonToRet.nodes = nodes;
+        jsonToRet.links = links;
+        return toRet;
+    }
+   
     
 }
 
