@@ -2,19 +2,14 @@ window.onload = setup
 
 function setup(){
     var script = document.getElementById('forceDirectedLayout');
-
     var data = script.getAttribute('json');
-
-    var navTab = document.getElementById('graphicTab')
-    navTab.style.visibility = 'visible';
-    var graphicControls = document.getElementById('graphicControls')
-    graphicControls.style.visibility = 'visible'
     
     try{
         data = JSON.parse(data);
     } catch(x){
         console.log(x);
-        alert('Problem reading information. Insert again.')
+        alert('Problem reading information. Insert again.');
+        return;
     }
 
     links = data.links
@@ -25,9 +20,21 @@ function setup(){
     isolateData = data.isolatesData;
 
     init(); 
+    setVisibleControls();
     setGraphicFilters();
     createTables();
+    setEventListenners();
 
+}
+
+function setVisibleControls(){
+    var navTab = document.getElementById('graphicTab')
+    navTab.style.visibility = 'visible';
+    var graphicControls = document.getElementById('graphicControls')
+    graphicControls.style.visibility = 'visible'
+}
+
+function setEventListenners(){
     switchNodeLabels.addEventListener('change', function () {
         checker(this.checked)
     })
@@ -43,33 +50,15 @@ function setup(){
 
     profileColorFilter.addEventListener('input', changeColorByProfile)
     isolateColorFilter.addEventListener('input', changeColorByIsolate)
+
+    NodeSizeRange.addEventListener('input',changeNodeSize)
+    nodeLogScale.addEventListener('change', function(){
+        checkNodeLogScale(this.checked);
+    })
+    linkStrokeRange.addEventListener('input',changeLinkStroke)
+
+    
 }
-
-/////////////////// FORCE DIRECT LAYOUT ///////////////////////////
-
-const height = window.innerHeight;
-const width = window.innerWidth;
-const radius = 20;
-let links = [], nodes = [];
-let metadata = [], schemeGenes = [];
-let subsetProfiles = [], isolateData =[];
-var min_zoom = 0.1;
-var max_zoom = 7;
-let paused = false;
-let pinned = false;
-let simulation;
-let svg;
-let link;
-let linkText;
-let g;
-var colorExpand = "#c6dbef";
-var colorCollapse = "#3182bd";
-const nodelabels = 'nodelabels';
-const linklabels ='linklabels';
-
-
-const colorSequence = d3.interpolateSinebow;
-
 
 const switchNodeLabels = document.getElementById('NodeLabelsSwitch')
 const rangeNodeLabelSize = document.getElementById('NodeLabelsRange')
@@ -83,6 +72,60 @@ const colideForceRange = document.getElementById('colideForceRange')
 const profileColorFilter = document.getElementById('profileColorFilter');
 const isolateColorFilter = document.getElementById('isolateColorFilter');
 
+const NodeSizeRange = document.getElementById('NodeSizeRange');
+const nodeLogScale = document.getElementById('nodeLogScale');
+
+const linkStrokeRange = document.getElementById('linkStrokeRange');
+
+const height = window.innerHeight;
+const width = window.innerWidth;
+
+/////////////////// FORCE DIRECT LAYOUT ///////////////////////////
+
+const defaultcollideForce = 1.1;
+const defaultStrength = -2;
+const nodelabels = 'nodelabels';
+const linklabels ='linklabels';
+const colorExpand = "#000000";
+const colorCollapse = "#3182bd";
+
+let radius = 50;
+let linkStroke = 1.5;
+var strength = defaultStrength;
+var collideForce = defaultcollideForce;
+
+let linkForce;
+var linkDistance = function(d){return d.value ? d.value+nodeRadious(d) : nodeRadious(d)};
+var nodeRadious = function(d){
+    return Math.log(d.size ? d.size*(radius*radius) : (radius*radius));
+}
+
+let links = [], nodes = [];
+let metadata = [], schemeGenes = [];
+let subsetProfiles = [], isolateData =[];
+
+let paused = false;
+let pinned = false;
+let simulation;
+let svg;
+let link, node;
+let linkText;
+let g;
+
+
+const colorSequence = d3.interpolateSinebow;
+function color(d,value){
+    if(d.isCollapsed)
+        return colorCollapse;
+    if(value){
+        var x = value(d);
+        return x ? colorSequence(1/x) : colorExpand;
+    }
+    return colorExpand;
+
+
+}
+
 function init(){
     svg = d3.select('#svgCanvas')
         .attr("viewBox", [0, 0, width, height]);
@@ -91,16 +134,12 @@ function init(){
     g = svg.append("g");
 
     const zoom = d3.zoom()
-        .extent([[0, 0], [width, height]])
-        .scaleExtent([0.1, 8])
-        .on("zoom", zoomed);
+        .on("zoom", function({transform}){
+            g.attr("transform", transform);
+        });
 
     svg.call(zoom);
     start();
-}
-
-function zoomed({transform}) {
-    g.attr("transform", transform);
 }
 
 function start() {
@@ -119,8 +158,7 @@ function start() {
     linkText = g.selectAll(".links")
         .append("text")
         .attr("class", linklabels)
-        .attr("dy", ".35em")
-        .text(d=>d.value);
+        .text(d=> d.value ? d.value : 'unknown');
 
     node = g.append("g")
         .attr("class", "nodes")
@@ -132,7 +170,7 @@ function start() {
         .attr("id", d => d.key+"_node")
         .append("circle")
         .attr("id", d => d.key)
-        .attr("r",  radius)
+        .attr("r", nodeRadious)
         .on('click', click)
         
 
@@ -157,16 +195,16 @@ function start() {
 }
 
 function startSimulation(){
-    var linkForce = d3.forceLink(links);
+    linkForce = d3.forceLink(links);
     linkForce.id(d => d.key);
-    linkForce.distance(d => d.value);
+    linkForce.distance(linkDistance);
 
     simulation = d3.forceSimulation(nodes)
         .force("link", linkForce)
-        .force("charge", d3.forceManyBody().strength(-500))
+        .force("charge", d3.forceManyBody().strength(d=>strength*linkDistance(d)))
         .force("center", d3.forceCenter(width /2 , height/2))
-        .force("collide", d3.forceCollide().radius(radius+2))
-        .alphaTarget(1)
+        .force("collide", d3.forceCollide().radius(d => collideForce*nodeRadious(d)))
+        .alphaTarget(0.8)
         .on("tick", ticked);
 }
 
@@ -207,44 +245,56 @@ function changeLinkLabelSize(){
         .style("font-size",size)
 }
 
-///// GRAPHIC FORCES ////////
+/////// NODE AND LINK SIZE ////////
+function changeNodeSize(){
+    radius = NodeSizeRange.value
+    node.selectAll("circle")
+        .attr("r", nodeRadious);
 
+
+}
+
+function checkNodeLogScale(checked){
+    var withLog = function(d){
+        return Math.log(d.size ? d.size*(radius*radius) : (radius*radius));
+    }
+    var withoutLog = function(d){
+        return d.size ? d.size+radius : radius;
+    }
+    nodeRadious = checked ? withLog : withoutLog;
+    changeNodeSize();
+}
+
+function changeLinkStroke(){
+    linkStroke = linkStrokeRange.value
+
+    link
+        .style("stroke-width",linkStroke)
+}
+
+///// GRAPHIC FORCES ////////
 function changeChargeForce(){
-    var value = chargeForceRange.value
-    simulation.force("charge", d3.forceManyBody().strength(value))
-    simulation.restart();
+    strength = chargeForceRange.value
+    simulation.force("charge", d3.forceManyBody().strength(d=>strength+linkDistance(d)))
 }
 
 function changeColideForce(){
-    var value = colideForceRange.value
-
+    collideForce = colideForceRange.value
     simulation
-        .force("collide", d3.forceCollide().strength(value)).alphaTarget(1)
+        .force("collide", d3.forceCollide().radius(d => collideForce*nodeRadious(d)))
 
 }
-function resetForces(){
-    simulation
-        .force("charge", d3.forceManyBody().strength(-100))
-        .force("collide", d3.forceCollide().radius(radius+5))
-        .on('tick',ticked)
-    simulation.restart();
 
-    chargeForceRange.value = -100;
-    colideForceRange.value = 1;
+function resetForces(){
+    strength = defaultStrength;
+    collideForce = defaultcollideForce;
+    chargeForceRange.value = strength ;
+    colideForceRange.value = collideForce;
+    changeChargeForce();
+    changeColideForce();
 }
  
-function color(d,value) {
-    if(d.isCollapsed)
-        return colorCollapse;
-    if(value){
-        var x = value(d);
-        return x ? colorSequence(1/x) : colorExpand;
-    }
-    return colorExpand;
-
-
-}
-
+/////// GRAPHIC MOVEMENT ////////
 function click(event, node){
     console.log("NODE CLICKED")
     var changeColor = document.getElementById(node.key)
@@ -299,15 +349,12 @@ function click(event, node){
         var visibility = element.getAttribute('visibility')
         var type = element.className.baseVal 
 
-        if (visibility==null || visibility=='visible'){
+        if (visibility==null || visibility=='visible')
             element.setAttribute("visibility","hidden")
-        } else {
-            if((type==nodelabels || type==linklabels) && !switchNodeLabels.checked)
+        else if((type==nodelabels && !switchNodeLabels.checked) || (type==linklabels && !switchLinkLabels.checked))
                 element.setAttribute("visibility","hidden")
-            else
+        else
                 element.setAttribute("visibility","visible")
-
-        }
         
     }
 
@@ -326,7 +373,8 @@ function click(event, node){
 }
 
 function ticked() {
-    link
+    try {
+        link
         .attr("x1", d => d.source.x)
         .attr("y1", d => d.source.y)
         .attr("x2", d => d.target.x)
@@ -342,8 +390,12 @@ function ticked() {
      
     node
         .attr("transform", function(d) {
-                    return "translate(" + d.x + "," + d.y + ")";
+            return "translate(" + d.x + "," + d.y + ")";
         })
+    } catch (error) {
+        console.log(error)
+    }
+   
         
 }
 
@@ -365,6 +417,7 @@ function dragended(d) {
     d.subject.fy = null;
 }
 
+/////// GRAPHIC BUTTONS ///////////////
 function restartSimulation(){
     /*simulation.stop();
     g.selectAll("*").remove();
@@ -449,11 +502,9 @@ function pinNodes(){
         
 }
 
-
 //////// DATA FILTERS /////////
 
 function setGraphicFilters(){
-
     if(schemeGenes){
         schemeGenes.forEach( x => {
             var opt = document.createElement('option');
@@ -521,65 +572,75 @@ var records_per_page = 10;
 let obj;
 let pData;
 let auxData;
+var table;
+var tableProfile, tableIsolate;
+var tableHeaderProfile, tableHeaderIsolate;
+var tableBodyProfile, tableBodyIsolate;
+var tableFootProfile, tableFootIsolate;
+var isolateTableCondition, profileTabelCondition;
+var condition = null;
+var divTabelProfile, divTabelIsolate;
+var page_span;
+var btn_next, btn_prev;
 
-/**
- * 
- * @param {Array table rows} data 
- * @param {HTML div} tableDiv 
- * @returns 
- */
-function buildTable(data,tableDiv,headers){
-    tableDiv.innerHTML = ""
-    var table = document.createElement('table')
-    table.setAttribute('class','table table-striped table-bordered table-hover')
+var tab;
 
-    //CREATE TABLE HEADERS
-    var tableHead = document.createElement('thead');
-    var tableTRhead = document.createElement('tr')
-    tableHead.appendChild(tableTRhead)
-        
-    headers.forEach(element => {
-        var headerElement = document.createElement('th')
-        headerElement.setAttribute('id',element);
-
-        var linkHeader = document.createElement('a')
-        linkHeader.setAttribute('class', 'nounderline btn-lg')
-        linkHeader.onclick = newPieChart;
-        linkHeader.innerHTML = element
-       
-        headerElement.appendChild(linkHeader);
-        tableTRhead.appendChild(headerElement);
-    })
-    table.appendChild(tableHead);
-
-    //CREATE TABLE BODY
-    var tableBody = document.createElement('tbody');
-    data.forEach(row => {
-        var tableTR = document.createElement('tr');
-        tableBody.appendChild(tableTR);
-
-        row.forEach(element => {
-            var tableElement = document.createElement('td')
-            tableElement.innerHTML=element;
-            tableElement.setAttribute('id',element);
-            tableTR.appendChild(tableElement);
-        })    
-    });
-    table.appendChild(tableBody);
-
-    //APPEND TABLE TO TABLE DIV
-    tableDiv.appendChild(table);
-    return;
-}
+const profileTableID = 'profileTabel'
+const isolateTableID = 'auxTable'
+const search = 'search_';
 
 function createTables(){
     try{
-        if(subsetProfiles && subsetProfiles.length>0){    
-            changePage(1,'profile');
+        if(subsetProfiles && subsetProfiles.length>0){  
+            divTabelProfile = document.getElementById(profileTableID)
+            tableProfile = document.createElement('table')
+            tableHeaderProfile = document.createElement('thead')
+            tableBodyProfile = document.createElement('tbody')
+            tableFootProfile = document.createElement('tfoot');
+            
+            tableProfile.appendChild(tableHeaderProfile);
+            tableProfile.appendChild(tableBodyProfile);
+            tableProfile.appendChild(tableFootProfile);
+            divTabelProfile.appendChild(tableProfile);
+
+            tableProfile.setAttribute('class','table table-striped table-bordered table-hover')
+
+            btn_next = document.getElementById("btn_next-profile");
+            btn_prev = document.getElementById("btn_prev_profile");
+            page_span = document.getElementById("pageProfile");
+            obj = subsetProfiles;
+            
+            buildTableHeaders(schemeGenes,tableHeaderProfile)
+
+            changePage(1,tableBodyProfile);
+
+            buildTableFooter(schemeGenes,tableFootProfile)
         }
         if(isolateData && isolateData.length>0){
-            changePage(1,'aux');
+            divTabelIsolate = document.getElementById(isolateTableID)
+            tableIsolate = document.createElement('table')
+            tableHeaderIsolate = document.createElement('thead')
+            tableBodyIsolate = document.createElement('tbody')
+            tableFootIsolate = document.createElement('tfoot');
             
+            tableIsolate.appendChild(tableHeaderIsolate);
+            tableIsolate.appendChild(tableBodyIsolate);
+            tableIsolate.appendChild(tableFootIsolate);
+            divTabelIsolate.appendChild(tableIsolate)
+
+            tableIsolate.setAttribute('class','table table-striped table-bordered table-hover')
+
+            btn_next = document.getElementById("btn_next-aux");
+            btn_prev = document.getElementById("btn_prev_aux");
+            page_span = document.getElementById("pageAux");
+            obj = isolateData;
+
+            buildTableHeaders(metadata,tableHeaderIsolate);
+               
+
+            changePage(1,tableBodyIsolate);
+            
+            buildTableFooter(metadata,tableFootIsolate);
         }
     } catch(x){
         console.log(x);
@@ -588,88 +649,240 @@ function createTables(){
    
 }
 
+
+
+function buildTableHeaders(headers, tableHead){
+    return new Promise((resolve, reject) => {
+        var tableTRhead = document.createElement('tr');
+        tableHead.appendChild(tableTRhead)
+         
+        try {
+            headers.forEach(element => {
+                var headerElement = document.createElement('th')
+
+                tableTRhead.appendChild(headerElement);
+
+                var linkHeader = document.createElement('a')
+                    linkHeader.setAttribute('class', 'nounderline btn-lg')
+                    linkHeader.onclick = newPieChart;
+                    linkHeader.innerHTML = element
+            
+                headerElement.appendChild(linkHeader);
+                tableTRhead.appendChild(headerElement);    
+            });
+            
+            resolve(tableHead);
+        } catch (error) {
+            console.log(error);
+            reject(error);
+        }
+            
+    })  
+}
+
+function buildTableBody(data, tableBody){
+    return new Promise((resolve, reject) => {
+        tableBody.innerHTML = ""
+        try {
+            data.forEach(row => {
+                var tableTR = document.createElement('tr');
+                tableBody.appendChild(tableTR);
+
+                row.forEach(element => {
+                    var tableElement = document.createElement('td')
+                    tableElement.innerHTML=element;
+                    tableElement.setAttribute('id',element);
+                    tableTR.appendChild(tableElement);
+                })    
+            });
+            resolve(tableBody)
+            
+        } catch (error) {
+            console.log(error);
+            reject(error);
+        }
+            
+    })
+    
+}
+
+function  buildTableFooter(headers, tableFooter){
+    return new Promise((resolve, reject) => {
+        var tableTR = document.createElement('tr');
+        tableFooter.appendChild(tableTR)
+
+        try {
+            headers.forEach(element => {
+                var footerElement = document.createElement('th')
+                
+                var searchHeader = document.createElement('input')
+                searchHeader
+                    .setAttribute('id',search+element)
+                searchHeader
+                    .setAttribute('class', 'searchTables form-control')
+                searchHeader
+                    .setAttribute('type', 'text')
+                searchHeader
+                    .setAttribute('placeholder', 'Search '+element)
+                
+                searchHeader.
+                    addEventListener('input',filterTable)
+
+                footerElement.appendChild(searchHeader);
+                tableTR.appendChild(footerElement);
+                resolve(tableFooter);
+            });
+        } catch (error) {
+            console.log(error);
+            reject(error);
+        }
+            
+    })
+}
+
+function filterTable(e){
+    
+    var search = e.path[0]; //search_id
+    var searchID = search.id
+    var value = search.value
+    var bodyTab;
+    var elementID = searchID.split('_')[1]; //id
+    var tableDivID = e.path[5].id;
+    var index;
+
+    
+
+    if(tableDivID==profileTableID){
+        btn_next = document.getElementById("btn_next-profile");
+        btn_prev = document.getElementById("btn_prev_profile");
+        page_span = document.getElementById("pageProfile");
+        obj = subsetProfiles;
+        index = schemeGenes.indexOf(elementID);
+        current_page_profile = 1;
+        bodyTab = tableBodyProfile;
+
+        if(value){
+            profileTabelCondition = [value,index];
+            
+        } else {
+            profileTabelCondition = null;
+        }
+        condition = profileTabelCondition;
+
+       
+    } else if(tableDivID == isolateTableID) {
+        btn_next = document.getElementById("btn_next-aux");
+        btn_prev = document.getElementById("btn_prev_aux");
+        page_span = document.getElementById("pageAux");
+        obj = isolateData;
+        index = metadata.indexOf(elementID);
+        current_page_aux = 1;
+        bodyTab = tableBodyIsolate;
+
+        if(value){
+            isolateTableCondition = [value,index]
+        } else {
+            isolateTableCondition = null;
+        }
+        
+        condition = isolateTableCondition;
+    } 
+    
+    changePage(1,bodyTab); 
+}
+const filterTableInfo = function(v,i){
+    return obj.filter(x => {
+        for(var p in x){
+            var data = x[p]; 
+            if(data[i])        
+                return data[i].includes(v);
+            return false
+        }
+    })
+}
+
 function prevPageProfile()
 {
     if (current_page_profile > 1) {
+        btn_next = document.getElementById("btn_next-profile");
+        btn_prev = document.getElementById("btn_prev_profile");
+        page_span = document.getElementById("pageProfile");
+        obj = subsetProfiles;
+        condition = profileTabelCondition;
         current_page_profile--;
-        changePage(current_page_profile,'profile');
+        changePage(current_page_profile,tableBodyProfile);
     }
 }
 function nextPageProfile()
-{
-    if(subsetProfiles && subsetProfiles.length>0){    
+{ 
+    if(subsetProfiles && subsetProfiles.length>0){
+        condition = profileTabelCondition;
+
+        btn_next = document.getElementById("btn_next-profile");
+        btn_prev = document.getElementById("btn_prev_profile");
+        page_span = document.getElementById("pageProfile");    
         obj = subsetProfiles;
+
         if (current_page_profile < numPages()) {
             current_page_profile++;
-            changePage(current_page_profile,'profile');
+            changePage(current_page_profile,tableBodyProfile);
         }
     }
     
 }
 function prevPageAux()
 {
+    
     if (current_page_aux > 1) {
+        condition = isolateTableCondition;
+
+        btn_next = document.getElementById("btn_next-aux");
+        btn_prev = document.getElementById("btn_prev_aux");
+        page_span = document.getElementById("pageAux");
+        obj = isolateData;
+
         current_page_aux--;
-        changePage(current_page_aux,'aux');
+        changePage(current_page_aux,tableBodyIsolate);
     }
 }
 function nextPageAux()
 {
     if(isolateData && isolateData.length>0){
-        obj = isolateData;
-        if (current_page_aux < numPages()) {
-            current_page_aux++;
-            changePage(current_page_aux,'aux');
-        }
-    }
-}
+        condition = isolateTableCondition;
 
-function changePage(page, type)
-{
-    var page_span;
-    var div;
-    var btn_next, btn_prev;
-    var headers;
-    var dataToShow = [];
-    
-    
-
-    if(type == 'profile'){
-        div = document.getElementById('profileTabel')
-        btn_next = document.getElementById("btn_next-profile");
-        btn_prev = document.getElementById("btn_prev_profile");
-        page_span = document.getElementById("pageProfile");
-        obj = subsetProfiles;
-        headers = schemeGenes;
-        if (page < 1) page = 1;
-        if (page > numPages()) page = numPages();
-        for (var i = (page-1) * records_per_page; i < (page * records_per_page) && i<obj.length; i++) {
-            dataToShow.push(obj[i].profile);
-        }
-    }
-    else {
-        div = document.getElementById('auxTable');
         btn_next = document.getElementById("btn_next-aux");
         btn_prev = document.getElementById("btn_prev_aux");
         page_span = document.getElementById("pageAux");
         obj = isolateData;
-        headers = metadata;
-        if (page < 1) page = 1;
-        if (page > numPages()) page = numPages();
-        for (var i = (page-1) * records_per_page; i < (page * records_per_page) && i<obj.length; i++) {
-            dataToShow.push(obj[i].isolate);
+
+        if (current_page_aux < numPages()) {
+            current_page_aux++;
+            changePage(current_page_aux,tableBodyIsolate);
         }
     }
-        
-   
-     
-    
-    
+}
+
+function changePage(page, tableBody)
+{
+    var dataToShow = [];
+
+    if(condition){
+        obj = filterTableInfo(condition[0],condition[1]);
+    }
+
+    if (page < 1) page = 1;
+    if (page > numPages()) page = numPages();
+    for (var i = (page-1) * records_per_page; i < (page * records_per_page) && i<obj.length; i++) {
+        var x = obj[i]
+        for(var property in x) {
+            dataToShow.push(x[property])
+        }
+    }
+
+    buildTableBody(dataToShow,tableBody)
 
     page_span.innerHTML = page;
 
-    buildTable(dataToShow,div,headers);
-    
     if (page == 1) {
         btn_prev.ariaDisabled = true;
     } else {
@@ -717,7 +930,7 @@ function buildPieChart(name,data,id){
     var w = 400,
     h = 400,
     margin = 40;
-    var radius = 150; //Math.min(w, h) / 2 - margin;
+    var  rds= 150; //Math.min(w, h) / 2 - margin;
     d3.select(id).selectAll("*").remove();
 
     var svgPieChart = d3.select(id)
@@ -747,7 +960,7 @@ function buildPieChart(name,data,id){
 
     var path = d3.arc()
         .innerRadius(0)
-        .outerRadius(radius);
+        .outerRadius(rds);
                 
     arc.append("path")
         .attr("d", path)
@@ -767,7 +980,6 @@ function buildJson(data){
     return counts;
    
 }
-
 
 /**
  * @param {String} message 

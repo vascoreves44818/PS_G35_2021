@@ -35,8 +35,6 @@ function getFileFromPost(req,res,next){
         .then(tableElements => {
             phylo_file.getJson(tree,datasetname,tableElements)
                 .then(treeInfo => {
-  //                  treeInfo.profileData = tableElements[0];
-//                    treeInfo.isolateData = tableElements[1];
                     fileInfo = { 
                         json: JSON.stringify(treeInfo),
                     }

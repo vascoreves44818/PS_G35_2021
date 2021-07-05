@@ -1,13 +1,20 @@
 'use strict'
 
-
+var index = 1;
 var jsonToRet = {};
 let links = [], nodes = [];
 let root;
+const unknown = 'UNKNOWN_'
 
 function flatten(root) {
     function recurse(node){
+        var nd = {};
+        if(node.name.length == 0){ 
+            node.name = unknown+index;
+            index++;
+        }
         if (node.branchset){
+            nd.size = node.branchset.length
             node.branchset.forEach(function(n){
                 var link = {}
                 link.source = node.name
@@ -18,7 +25,7 @@ function flatten(root) {
                 recurse(n)
             });
         }
-        var nd = {};
+        
         nd.key = node.name;
         nodes.push(nd);
     }
@@ -30,6 +37,7 @@ function parse(json,datasetname,tableElements){
     root = json;
     links = [];
     nodes = [];
+    index=1;
     root.forEach(flatten);
 
     jsonToRet = {};
@@ -99,7 +107,7 @@ function parse(json,datasetname,tableElements){
         } 
     } else {
         jsonToRet.data_type.push('UNKNOWN_DATA_TYPE');
-        jsonToRet.scheme_genes.push('UNKNOWN_SCHEME_GENES');
+        jsonToRet.schemeGenes.push('UNKNOWN_SCHEME_GENES');
         jsonToRet.metadata.push('UNKNOWN_METADATA');
     }
     
@@ -144,7 +152,7 @@ function splitByline(data){
 }
 
 function splitByTab(data){
-
+    //TODO
 }
 
 module.exports = { parse, parseTables }

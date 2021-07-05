@@ -153,9 +153,10 @@
                                         DATA FILTERS
                                     </button>
                                     <div class="mt-3 btn-group-vertical collapse" id="collapsedGraphic"  style="width: 100%;">
+                                        <!-- COLORS -->
                                         <button class="mb-1 btn btn-secondary" type="button" data-toggle="collapse" data-target="#colorFilters" aria-expanded="false"  style="width: 100%;">COLORS</button>
-                                            <div class="collapse" id="colorFilters">
-                                                <label class="mt-3 form-check-label" for="profileColorFilter">By profile:</label>
+                                            <div class="mb-2 collapse" id="colorFilters">
+                                                <label class="mt-2 form-check-label" for="profileColorFilter">By profile:</label>
                                                 <select id="profileColorFilter" class="form-select" aria-label="Default select example">
                                                     <option selected>None</option>
                                                 </select>
@@ -164,6 +165,14 @@
                                                     <option selected>None</option>
                                                 </select>
                                             </div>
+                                            <!-- size -->
+                                            <button class="mb-1 btn btn-secondary" type="button" data-toggle="collapse" data-target="#sizeFilters" aria-expanded="false"  style="width: 100%;">SIZE</button>
+                                            <div class="collapse" id="sizeFilters">
+                                               
+
+                                                
+                                            </div>
+
                                     </div>
                                 </div>
                                 <!-- GRAPHIC FILTERS -->
@@ -177,7 +186,15 @@
                                                     <input class="form-check-input" type="checkbox" id="NodeLabelsSwitch">
                                                 </div>
                                                     <label for="NodeLabelsRange" class="form-label">Node labels size:</label>
-                                                    <input type="range" class="form-range" min="10" max="50" id="NodeLabelsRange" value="10">
+                                                    <input type="range" class="form-range" min="20" max="500" id="NodeLabelsRange" value="20">
+                                                     <label for="NodeSizeRange" class="form-label">Node size:</label>
+                                                    <input type="range" class="mb-1 form-range" min="50" max="100000" id="NodeSizeRange" value="50">
+                                                    <div class="mb-2 form-check">
+                                                        <input class="form-check-input" type="checkbox" value="" id="nodeLogScale" checked>
+                                                        <label class="form-check-label" for="nodeLogScale">
+                                                            Log Scale:
+                                                        </label>
+                                                    </div>
                                             </div>    
                                         <button class=" mb-1 btn btn-secondary" type="button" data-toggle="collapse" data-target="#linkFilters" aria-expanded="false" style="width: 100%;" >LINKS</button>
                                             <div class="collapse" id="linkFilters">
@@ -186,15 +203,18 @@
                                                     <input class="form-check-input" type="checkbox" id="LinkLabelsSwitch">
                                                 </div>
                                                     <label for="LinkLabelsRange" class="form-label">Link labels size:</label>
-                                                    <input type="range" class="form-range" min="10" max="50" id="LinkLabelsRange" value="10">
+                                                    <input type="range" class="form-range" min="30" max="500" id="LinkLabelsRange" value="30">
+                                                    <label for="linkStrokeRange" class="form-label">Link stroke:</label>
+                                                    <input type="range" class="form-range" min="5" max="50" step="" id="linkStrokeRange" value="5" >
+                                               
                                             </div>
                                         <button class=" mb-1 btn btn-secondary" type="button" data-toggle="collapse" data-target="#graphFilters" aria-expanded="false" style="width: 100%;">LAYOUT</button>
                                             <div class="collapse" id="graphFilters">
                                                 <label for="chargeForceRange" class="form-label">Charge force:</label>
-                                                <input type="range" class="form-range" min="-300" max="0" id="chargeForceRange" value="-100">
+                                                <input type="range" class="form-range" min="-100" max="50" id="chargeForceRange" value="-2">
 
                                                 <label for="colideForceRange" class="form-label">Colide force:</label>
-                                                <input type="range" class="form-range" min="0" max="1" step="0.2" id="colideForceRange" value="1">
+                                                <input type="range" class="form-range" min="0" max="2" step="0.1" id="colideForceRange" value="1.1">
 
                                                 <button class="form-control btn btn-sm btn-light" type="button" onclick="resetForces()">RESET</button>
                                             </div>
@@ -219,8 +239,7 @@
             </div>
         </div>
 
-    
-        
+     
     
     </body>
 </html>
