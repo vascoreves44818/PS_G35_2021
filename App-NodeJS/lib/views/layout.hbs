@@ -165,13 +165,7 @@
                                                     <option selected>None</option>
                                                 </select>
                                             </div>
-                                            <!-- size -->
-                                            <button class="mb-1 btn btn-secondary" type="button" data-toggle="collapse" data-target="#sizeFilters" aria-expanded="false"  style="width: 100%;">SIZE</button>
-                                            <div class="collapse" id="sizeFilters">
-                                               
-
-                                                
-                                            </div>
+                                            
 
                                     </div>
                                 </div>
@@ -188,7 +182,7 @@
                                                     <label for="NodeLabelsRange" class="form-label">Node labels size:</label>
                                                     <input type="range" class="form-range" min="20" max="500" id="NodeLabelsRange" value="20">
                                                      <label for="NodeSizeRange" class="form-label">Node size:</label>
-                                                    <input type="range" class="mb-1 form-range" min="50" max="100000" id="NodeSizeRange" value="50">
+                                                    <input type="range" class="mb-1 form-range" min="50" max="1000000" id="NodeSizeRange" value="50">
                                                     <div class="mb-2 form-check">
                                                         <input class="form-check-input" type="checkbox" value="" id="nodeLogScale" checked>
                                                         <label class="form-check-label" for="nodeLogScale">
@@ -211,10 +205,10 @@
                                         <button class=" mb-1 btn btn-secondary" type="button" data-toggle="collapse" data-target="#graphFilters" aria-expanded="false" style="width: 100%;">LAYOUT</button>
                                             <div class="collapse" id="graphFilters">
                                                 <label for="chargeForceRange" class="form-label">Charge force:</label>
-                                                <input type="range" class="form-range" min="-100" max="50" id="chargeForceRange" value="-2">
+                                                <input type="range" class="form-range" min="-100" max="50" id="chargeForceRange" value="-4">
 
                                                 <label for="colideForceRange" class="form-label">Colide force:</label>
-                                                <input type="range" class="form-range" min="0" max="2" step="0.1" id="colideForceRange" value="1.1">
+                                                <input type="range" class="form-range" min="0" max="5" step="0.2" id="colideForceRange" value="2.5">
 
                                                 <button class="form-control btn btn-sm btn-light" type="button" onclick="resetForces()">RESET</button>
                                             </div>

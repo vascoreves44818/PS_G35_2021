@@ -82,12 +82,14 @@ const width = window.innerWidth;
 
 /////////////////// FORCE DIRECT LAYOUT ///////////////////////////
 
-const defaultcollideForce = 1.1;
-const defaultStrength = -2;
+const defaultcollideForce = 2.5;
+const defaultStrength = -3;
 const nodelabels = 'nodelabels';
 const linklabels ='linklabels';
-const colorExpand = "#000000";
-const colorCollapse = "#3182bd";
+const colorExpand = "lightGray";
+const colorCollapse = "#000000";
+
+//const colorCollapse = "#3182bd";
 
 let radius = 50;
 let linkStroke = 1.5;
@@ -119,11 +121,9 @@ function color(d,value){
         return colorCollapse;
     if(value){
         var x = value(d);
-        return x ? colorSequence(1/x) : colorExpand;
+        return x ? x : colorExpand;
     }
     return colorExpand;
-
-
 }
 
 function init(){
@@ -275,7 +275,7 @@ function changeLinkStroke(){
 ///// GRAPHIC FORCES ////////
 function changeChargeForce(){
     strength = chargeForceRange.value
-    simulation.force("charge", d3.forceManyBody().strength(d=>strength+linkDistance(d)))
+    simulation.force("charge", d3.forceManyBody().strength(d=>strength*linkDistance(d)))
 }
 
 function changeColideForce(){
@@ -526,36 +526,62 @@ function setGraphicFilters(){
     }
     
 }
-
-function changeColorByProfile(){
-     
-    var key = profileColorFilter.value;
+function changeColorByProfile(e,k){
+    var colorScheme = {}
+    var key = k ? k : profileColorFilter.value;
     var index = schemeGenes.indexOf(key);
+    
+   
+    subsetProfiles.forEach(x =>{
+        if(x.profile[index]){
+            var data = x.profile[index];
+            colorScheme[data] = colorScheme[data] ? colorScheme[data]+1 : 1;
+        }
+    })
+
+    var keys = Object.keys(colorScheme);
+
+    //var ext = d3.extent(keys);
+    
+    let myScale = d3.scaleSequential(d3.interpolateRainbow)
+        .domain([0,keys.length])
+
     var value = function(d){ 
-        if(d.profile) 
-            return d.profile[index] 
+        if(d.profile[index]){  
+            var clr = myScale(keys.indexOf(d.profile[index]))
+            //console.log(clr +'-' + d.profile[index])
+            return clr;  
+        }
         return null;
-    }
+        }
 
     node.selectAll("circle")
         .style("fill",x => color(x,value));
     
 }
 
-function changeColorByIsolate(){
-    var numbers =[];
-    let id = 1;
-    var key = isolateColorFilter.value;
+function changeColorByIsolate(e,k){
+    var colorScheme = {}
+    var key = k ? k : isolateColorFilter.value;
     var index = metadata.indexOf(key);
+
+    isolateData.forEach(x =>{
+        if(x.isolate[index]){
+            var data = x.isolate[index];
+            colorScheme[data] = colorScheme[data] ? colorScheme[data]+1 : 1;
+        }
+    })
+    
+    var keys = Object.keys(colorScheme);
+
+    let myScale = d3.scaleSequential(d3.interpolateRainbow)
+        .domain([0,keys.length])
+
     var value = function(d){ 
         if(d.isolates){
-            var iso = d.isolates[index] 
-            if(!numbers[iso]){
-                numbers[iso] = id;
-                id++; 
-            }
-            return numbers[iso];
-
+            var clr = myScale(keys.indexOf(d.isolates[index]))
+            //console.log(clr +'-' + d.isolates[index])
+            return clr;
         } 
         return null;
     }
@@ -649,8 +675,6 @@ function createTables(){
    
 }
 
-
-
 function buildTableHeaders(headers, tableHead){
     return new Promise((resolve, reject) => {
         var tableTRhead = document.createElement('tr');
@@ -664,6 +688,9 @@ function buildTableHeaders(headers, tableHead){
 
                 var linkHeader = document.createElement('a')
                     linkHeader.setAttribute('class', 'nounderline btn-lg')
+                    linkHeader.setAttribute("data-toggle","collapse")
+                    
+                    
                     linkHeader.onclick = newPieChart;
                     linkHeader.innerHTML = element
             
@@ -908,36 +935,40 @@ function newPieChart(event){
     var path = event.path;
     var divTabel = document.getElementById('profileTablePanel')
     if(path.includes(divTabel)){
+        //event.currentTarget.setAttribute("data-target","#profilePieChartDiv")
         var index = schemeGenes.indexOf(header);
         var elements = []
         subsetProfiles.forEach( row => {
             elements.push(row.profile[index]);
         })
-        buildPieChart(header, elements,'#profilePieChartSVG')
-        
+        buildPieChart(header, elements,'#profilePieChartSVG','#profilePieLabels');
     } else {
+        //event.currentTarget.setAttribute("data-target","#auxPieChartDiv")
+
         var index = metadata.indexOf(header);
         var elements = []
         isolateData.forEach( row => {
             elements.push(row.isolate[index]);
         })
-        buildPieChart(header, elements,'#auxPieChartSVG')
+        buildPieChart(header, elements,'#auxPieChartSVG','#auxPieLabels');
     }  
 }
 
-function buildPieChart(name,data,id){
+function buildPieChart(name,data,id,legendID){
     
-    var w = 400,
-    h = 400,
-    margin = 40;
+    var w = 300,
+    h = 300;
     var  rds= 150; //Math.min(w, h) / 2 - margin;
     d3.select(id).selectAll("*").remove();
 
     var svgPieChart = d3.select(id)
-                            .attr("width",w)
-                            .attr("height",h)
+        .attr("viewBox", [0, 0, w, h]);
+                            //.attr("width",w)
+                            //.attr("height",h)
 
-    data = buildJson(data);
+
+    data = buildJsonNumberOfOccurences(data);
+    
     var keys = Object.keys(data);
     var obj = Object.entries(data);
 
@@ -949,9 +980,9 @@ function buildPieChart(name,data,id){
     var pie = d3.pie()
         .value(function(d) {return d[1]; });
 
-    var ordScale = d3.scaleOrdinal()
-                            .domain(keys)
-                            .range(d3.schemeDark2);
+    var ordScale = d3   
+        .scaleSequential(d3.interpolateRainbow)
+        .domain([0,keys.length])
 
     var arc = gElement
         .selectAll("arc")
@@ -961,16 +992,64 @@ function buildPieChart(name,data,id){
     var path = d3.arc()
         .innerRadius(0)
         .outerRadius(rds);
-                
+          
+    var colors = {};
     arc.append("path")
         .attr("d", path)
         .attr("fill", 
             function(d) { 
-                return ordScale(d.data[0]); 
+                var dt  = d.data[0]
+                var clr = ordScale(keys.indexOf(dt)); 
+                if(!colors[dt])  colors[dt] = clr;
+                //console.log(dt + '-' + clr);
+                return clr;
         });   
+    buildPieChartLabels(colors,legendID);
+
 }
 
-function buildJson(data){
+function buildPieChartLabels(colors,legendID){
+    const legendrect = 'legendrect'
+    var w = 150,
+    h = 300;
+    var jumpY = 20;
+    var i = 0
+
+    var size = Object.keys(colors).length * jumpY
+
+    d3.select(legendID).selectAll("*").remove();
+    var svgPieLabels = d3.select(legendID)
+        .attr("viewBox", [0, 0, w, size])
+    
+    for(var element in colors){
+        i++;
+        //colors[element] => cor
+        //element => valor
+
+        var g = svgPieLabels.append('g')            
+            .attr("transform","translate(0,"+jumpY*i+")")
+
+
+        var rect = g.append('rect')
+            .attr("width","15px")
+            .attr("height","15px")
+            .attr("class",legendrect+i)
+            .attr("indexColor",i)
+            
+        rect.style("fill",colors[element])
+
+        var text = g.append('text')
+        text
+            .attr("x",20)
+            .attr("y",7.5)
+            .attr("dy",".35em")
+
+        text.style("font-size", "12.5px")
+        text.node().innerHTML = element;
+    }
+}
+
+function buildJsonNumberOfOccurences(data){
     var counts = {};
 
     for (var i = 0; i < data.length; i++) {
