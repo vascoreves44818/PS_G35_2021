@@ -52,9 +52,11 @@ function setEventListenners(){
     isolateColorFilter.addEventListener('input', changeColorByIsolate)
 
     NodeSizeRange.addEventListener('input',changeNodeSize)
-    nodeLogScale.addEventListener('change', function(){
-        checkNodeLogScale(this.checked);
-    })
+    nodeLogScale.addEventListener('change', changeNodeSize)
+    nodeSizeKey.addEventListener('input',changeNodeSize)
+    /*nodeLogScale.addEventListener('change', function(){
+        nodeRadious = checkNodeLogScale(this.checked);
+    })*/
     linkStrokeRange.addEventListener('input',changeLinkStroke)
 
     
@@ -74,16 +76,19 @@ const isolateColorFilter = document.getElementById('isolateColorFilter');
 
 const NodeSizeRange = document.getElementById('NodeSizeRange');
 const nodeLogScale = document.getElementById('nodeLogScale');
+const nodeSizeKey = document.getElementById('nodeSizeKey');
 
 const linkStrokeRange = document.getElementById('linkStrokeRange');
 
-const height = window.innerHeight;
-const width = window.innerWidth;
-
 /////////////////// FORCE DIRECT LAYOUT ///////////////////////////
 
-const defaultcollideForce = 2.5;
-const defaultStrength = -3;
+const height = window.innerHeight;
+const width = window.innerWidth;
+const defaultcollideForce = 5;
+const defaultStrength = -20;
+const defaultNodeSize = 25;
+
+const svgCanvas ='#svgCanvas';
 const nodelabels = 'nodelabels';
 const linklabels ='linklabels';
 const colorExpand = "lightGray";
@@ -91,15 +96,42 @@ const colorCollapse = "#000000";
 
 //const colorCollapse = "#3182bd";
 
-let radius = 50;
+let nodeScaleFactor =  NodeSizeRange.value;
+let sizeKey;
 let linkStroke = 1.5;
 var strength = defaultStrength;
 var collideForce = defaultcollideForce;
 
 let linkForce;
-var linkDistance = function(d){return d.value ? d.value+nodeRadious(d) : nodeRadious(d)};
-var nodeRadious = function(d){
-    return Math.log(d.size ? d.size*(radius*radius) : (radius*radius));
+var linkDistance = function(d){return d.value ? d.value : 1};
+//var nodeRadious= checkNodeLogScale(checkNodeLogScale.checked);
+
+/*var withLog = function(d){
+    if(!d.backupSize) d.backupSize = DefaultnodeSize 
+    d.backupSize = Math.log10(d.backupSize) * DefaultnodeSize + (d.isolates.length * nodeScaleFactor);
+    d.size = d.backupSize;
+    return d.size;
+
+}
+var withoutLog = function(d){
+    d.backupSize = DefaultnodeSize + (d.isolates.length * nodeScaleFactor);
+    d.size = d.backupSize;
+    return d.size;
+}*/
+
+function nodeSize(d){
+    var expr1 = defaultNodeSize;
+    var expr2 = (sizeKey ? d[sizeKey].length : 1) * nodeScaleFactor; 
+    
+    if(nodeLogScale.checked){
+        d.backupSize = d.backupSize ? d.backupSize : expr1 + expr2;
+        expr1 = defaultNodeSize * Math.log10(d.backupSize)
+    }
+    d.backupSize = expr1 + expr2
+    d.size = d.backupSize;
+           
+    return d.size;
+    
 }
 
 let links = [], nodes = [];
@@ -116,21 +148,22 @@ let g;
 
 
 const colorSequence = d3.interpolateSinebow;
-function color(d,value){
-    if(d.isCollapsed)
+function color(node,value){
+    if(node.isCollapsed)
         return colorCollapse;
     if(value){
-        var x = value(d);
+        var x = value(node);
         return x ? x : colorExpand;
     }
     return colorExpand;
 }
 
 function init(){
-    svg = d3.select('#svgCanvas')
-        .attr("viewBox", [0, 0, width, height]);
+    svg = d3.select(svgCanvas)
+        .attr("viewBox", [0, 0, width*2, height*2]);
 
-    link = svg.selectAll(".link"), node = svg.selectAll(".node");
+    link = svg.selectAll(".link")
+    node = svg.selectAll(".node");
     g = svg.append("g");
 
     const zoom = d3.zoom()
@@ -142,7 +175,7 @@ function init(){
     start();
 }
 
-function start() {
+function start(){
 
     link = g.append("g")
         .attr("class", "link")
@@ -170,7 +203,7 @@ function start() {
         .attr("id", d => d.key+"_node")
         .append("circle")
         .attr("id", d => d.key)
-        .attr("r", nodeRadious)
+        .attr("r", nodeSize)
         .on('click', click)
         
 
@@ -178,7 +211,6 @@ function start() {
         .attr("class",nodelabels)
         .text(d => d.key)
         
-    
     checker(switchNodeLabels.checked)
     checkerLinks(switchLinkLabels.checked)
  
@@ -201,9 +233,9 @@ function startSimulation(){
 
     simulation = d3.forceSimulation(nodes)
         .force("link", linkForce)
-        .force("charge", d3.forceManyBody().strength(d=>strength*linkDistance(d)))
+        .force("charge", d3.forceManyBody().strength(strength))
         .force("center", d3.forceCenter(width /2 , height/2))
-        .force("collide", d3.forceCollide().radius(d => collideForce*nodeRadious(d)))
+        .force("collide", d3.forceCollide().radius(d=>collideForce))
         .alphaTarget(0.8)
         .on("tick", ticked);
 }
@@ -247,27 +279,21 @@ function changeLinkLabelSize(){
 
 /////// NODE AND LINK SIZE ////////
 function changeNodeSize(){
-    radius = NodeSizeRange.value
+    nodeScaleFactor = NodeSizeRange.value
+    sizeKey = nodeSizeKey.value;
     node.selectAll("circle")
-        .attr("r", nodeRadious);
+        .attr("r", nodeSize);
 
 
 }
-
-function checkNodeLogScale(checked){
-    var withLog = function(d){
-        return Math.log(d.size ? d.size*(radius*radius) : (radius*radius));
-    }
-    var withoutLog = function(d){
-        return d.size ? d.size+radius : radius;
-    }
-    nodeRadious = checked ? withLog : withoutLog;
-    changeNodeSize();
-}
+/*
+function checkNodeLogScale(checked){ 
+    return checked ? withLog : withoutLog;
+    //changeNodeSize();
+}*/
 
 function changeLinkStroke(){
     linkStroke = linkStrokeRange.value
-
     link
         .style("stroke-width",linkStroke)
 }
@@ -275,13 +301,13 @@ function changeLinkStroke(){
 ///// GRAPHIC FORCES ////////
 function changeChargeForce(){
     strength = chargeForceRange.value
-    simulation.force("charge", d3.forceManyBody().strength(d=>strength*linkDistance(d)))
+    simulation.force("charge", d3.forceManyBody().strength(strength))
 }
 
 function changeColideForce(){
     collideForce = colideForceRange.value
     simulation
-        .force("collide", d3.forceCollide().radius(d => collideForce*nodeRadious(d)))
+        .force("collide", d3.forceCollide().radius(d => collideForce*nodeSize(d)))
 
 }
 
@@ -400,7 +426,7 @@ function ticked() {
 }
 
 function dragstarted(d) {
-    if (!event.active) simulation.alphaTarget(0.8).restart();
+    if (!event.active) simulation.alphaTarget(0.3).restart();
     d.subject.fx = d.x;
     d.subject.fy = d.y;
 
@@ -456,49 +482,6 @@ function pauseSimulation(){
 }
 
 function pinNodes(){
-    /*
-    var btnPinNodes = document.getElementById('btn_pin_nodes');
-    
-    if(pinned == true){
-        node.call(d3
-            .drag()
-            .on("start", dragstarted)
-            .on("drag", dragged)
-            .on("end", dragended)
-        );
-        btnPinNodes.setAttribute('class','btn btn-sm btn-outline-dark');
-        pinned = false;
-    } else {
-        
-        simulation.stop();
-        
-        node.call(d3
-            .drag()
-            .on("start", dragFixedstarted)
-            .on("drag", draggedFixed)
-            .on("end", dragFixedended)
-        );
-        btnPinNodes.setAttribute('class','btn btn-sm btn-dark');
-        pinned = true;
-    }
-    
-    function dragFixedstarted(d) {
-        //if (!event.active) simulation.alphaTarget(0.8).restart();
-        d.subject.fx = d.x;
-        d.subject.fy = d.y;
-    }
-    
-    function draggedFixed(d) {
-        d.subject.fx = d.x;
-        d.subject.fy = d.y;
-    }
-    
-    function dragFixedended(d) {
-        if (!event.active) simulation.alphaTarget(0);
-        d.subject.fx = null;
-        d.subject.fy = null;
-    }*/
-    
         
 }
 
@@ -506,6 +489,11 @@ function pinNodes(){
 
 function setGraphicFilters(){
     if(schemeGenes){
+        var colorOption = document.createElement('option')
+        colorOption.value = 'profile'
+        colorOption.innerHTML = 'Profile'
+        nodeSizeKey.append(colorOption)
+        
         schemeGenes.forEach( x => {
             var opt = document.createElement('option');
             opt.value = x;
@@ -516,6 +504,11 @@ function setGraphicFilters(){
     }
         
     if(metadata){
+        var colorOption = document.createElement('option')
+        colorOption.value = 'isolates'
+        colorOption.innerHTML = 'Isolate'
+        nodeSizeKey.append(colorOption)
+
         metadata.forEach( x => {
             var opt = document.createElement('option');
             opt.value = x;
@@ -529,9 +522,15 @@ function setGraphicFilters(){
 function changeColorByProfile(e,k){
     var colorScheme = {}
     var key = k ? k : profileColorFilter.value;
+
+    if(key.includes('None') || key.includes('UNKNOWN')){
+        node.selectAll("circle")
+            .style("fill",d => color(d));
+        return;
+    }
+
     var index = schemeGenes.indexOf(key);
-    
-   
+
     subsetProfiles.forEach(x =>{
         if(x.profile[index]){
             var data = x.profile[index];
@@ -540,8 +539,6 @@ function changeColorByProfile(e,k){
     })
 
     var keys = Object.keys(colorScheme);
-
-    //var ext = d3.extent(keys);
     
     let myScale = d3.scaleSequential(d3.interpolateRainbow)
         .domain([0,keys.length])
@@ -563,6 +560,11 @@ function changeColorByProfile(e,k){
 function changeColorByIsolate(e,k){
     var colorScheme = {}
     var key = k ? k : isolateColorFilter.value;
+    if(key.includes('None') || key.includes('UNKNOWN')){
+        node.selectAll("circle")
+            .style("fill",d => color(d));
+        return;
+    }
     var index = metadata.indexOf(key);
 
     isolateData.forEach(x =>{
@@ -929,6 +931,7 @@ function numPages()
 }
 
 //////////////////////// PIE CHARTS //////////////////////////////
+const pieLabelRegion = 'pieLabelRegion'
 
 function newPieChart(event){  
     var header = event.currentTarget.innerHTML;
@@ -958,13 +961,14 @@ function buildPieChart(name,data,id,legendID){
     
     var w = 300,
     h = 300;
-    var  rds= 150; //Math.min(w, h) / 2 - margin;
+    var  rds= 150; 
     d3.select(id).selectAll("*").remove();
 
     var svgPieChart = d3.select(id)
-        .attr("viewBox", [0, 0, w, h]);
-                            //.attr("width",w)
-                            //.attr("height",h)
+        .attr("viewBox", [0, 0, 320, 310])
+        .attr("width",w)
+        .attr("height",h)
+        
 
 
     data = buildJsonNumberOfOccurences(data);
@@ -1010,7 +1014,7 @@ function buildPieChart(name,data,id,legendID){
 
 function buildPieChartLabels(colors,legendID){
     const legendrect = 'legendrect'
-    var w = 150,
+    var w = 100,
     h = 300;
     var jumpY = 20;
     var i = 0

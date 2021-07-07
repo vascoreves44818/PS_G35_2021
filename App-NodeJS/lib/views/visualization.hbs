@@ -36,10 +36,10 @@
             </li>      
         </ul>
         <div class="container row from-control" id="profilePieChartDiv" >
-            <div class="col-sm pieRegion">
+            <div class="form-control col-sm-5 pieRegion">
                 <svg id="profilePieChartSVG" ></svg>
             </div>
-            <div id="profilePieLabelsDiv" class="col-sm pieLabelRegion" overflow ="scroll">
+            <div id="profilePieLabelsDiv" class="col-sm-5 form-control pieLabelRegion" overflow ="scroll">
                 <svg  id="profilePieLabels" class="legend" ></svg>
             </div>    
         </div>
@@ -60,10 +60,10 @@
             </li>
         </ul>
         <div class="from-control container row" id="auxPieChartDiv">
-            <div class="col pieRegion">
+            <div class="form-control col-sm-5 pieRegion" >
                 <svg id="auxPieChartSVG"></svg>
             </div>
-            <div id="auxPieLabelsDiv" class="col pieLabelRegion" >
+            <div id="auxPieLabelsDiv" class="col-sm-5 form-control pieLabelRegion" >
                 <svg id="auxPieLabels" class="legend" ></svg>
             </div>
 
@@ -111,12 +111,17 @@
         text-decoration: none 
     }
 
+    .pieRegion{
+        height: 300px;
+        width: 300px;
+        align-items: center;
+    }
     
 
     .pieLabelRegion {
         height: 300px;
         width: 150px;
-        overflow: scroll;
+        overflow-y: scroll;
     }
 
     
