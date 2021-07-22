@@ -1,4 +1,5 @@
 const phylo_file = require('../repo/phylo_file')
+const phylo_db =  require('../repo/phylo_db')
 const parser = require('./../parsing/parser')
 const qs = require('querystring')
 
@@ -7,13 +8,16 @@ const { table } = require('console')
 const router = Router()
 var fileInfo;
 
+
+
 module.exports = router
 
 router.get('/', firstPage);
 router.get('/phyloviz/home', home)
 router.get('/phyloviz/visualization', visualizationFromTree)
 router.get('/phyloviz/visualization/file', visualizationFromFile)
-router.post('/phyloviz/visualization', getFileFromPost)
+router.post('/phyloviz/insertFiles', readFiles)
+router.post('/phyloviz/insertDatabasefiles',readDatabaseFiles)
 
 function firstPage(req, res, next) {
     res.redirect('/phyloviz/home');
@@ -23,14 +27,13 @@ function home(req, res, next) {
     res.render('home')
 }
 
-function getFileFromPost(req,res,next){
+function readFiles(req,res,next){
     const data = req.body;
     const datasetname = data.datasetname
     const tree = data.tree;
     const profileData = data.profileData;
     const auxiliaryData = data.auxiliaryData;
     
-
     phylo_file.createTables(profileData,auxiliaryData)
         .then(tableElements => {
             phylo_file.getJson(tree,datasetname,tableElements)
@@ -43,6 +46,18 @@ function getFileFromPost(req,res,next){
         })
         .catch(next)
          
+}
+
+function readDatabaseFiles(req,res,next){
+    const data = req.body;
+    phylo_db.getJson(data.dbFile)
+        .then(dbData => {
+            fileInfo = { 
+                json: JSON.stringify(dbData)
+            }
+            res.end(JSON.stringify('File read with success!'));
+        })
+        .catch(next) 
 }
 
 function visualizationFromFile(req, res, next) {
@@ -58,11 +73,7 @@ function visualizationFromTree(req, res, next) {
             }
             res.render('visualization',toRet)
         })
-        .catch(next)
-   
-    
-    
+        .catch(next) 
 }
-
 
 

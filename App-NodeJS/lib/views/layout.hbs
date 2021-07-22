@@ -62,22 +62,21 @@
                                 <form method="GET" id="submitTree" action="/phyloviz/visualization" onsubmit="return validateTreeForm()">
                                     <div class="input-group mb-3">
                                         <input id="inputTree" name="tree" type="text" class="form-control" aria-label="Choose input type.">
-                                        <button  type="submit" class="btn btn-LIGHT" >GO</button>
+                                        <button  type="submit" class="btn btn-sm btn-LIGHT" >GO</button>
                                     </div>
                                 </form>   
                             </li>
                             <!-- NEW DATASET -->
-                            <li>
-                                <div class=" d-flex mb-3">
-                                    <a href="#"  class="nav-link text-white" aria-current="page">
+                            <li class="nav-item">
+                                <div class="d-flex mb-3">
+                                    <a  class="nav-link text-white dropdown-toggle" aria-current="page"  data-toggle="collapse" data-target="#newDataset" aria-expanded="false" aria-controls="collapsedGraphic">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-plus-fill" viewBox="0 0 16 16">
                                             <path d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.707 4L10 .293A1 1 0 0 0 9.293 0zM9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1zM8.5 7v1.5H10a.5.5 0 0 1 0 1H8.5V11a.5.5 0 0 1-1 0V9.5H6a.5.5 0 0 1 0-1h1.5V7a.5.5 0 0 1 1 0z"/>
                                             <use xlink:href="#home"/>
                                         </svg>
                                     New Dataset:
                                     </a>
-                                    <button class="btn btn-LIGHT dropdown-toggle" type="button" data-toggle="collapse" data-target="#newDataset" aria-expanded="false" aria-controls="collapsedGraphic">   
-                                    </button>
+                                   
                                 </div>
                                 <div class="collapse" id="newDataset">
                                     <div class="card text-white bg-dark mb-3 card-body">
@@ -103,7 +102,7 @@
                                             </div>  
                                             <!-- submit button --> 
                                             <div class="d-grid gap-2">
-                                                <button id="submitFile"  type="submit" class="btn btn-LIGHT">GO</button>                             
+                                                <button id="submitFile"  type="submit" class="btn btn-sm btn-LIGHT">GO</button>                             
                                             </div>
                                         </form>  
                                     </div>
@@ -116,8 +115,16 @@
                                     <path d="M8 2a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 6.095 0 7.555 0 9.318 0 11.366 1.708 13 3.781 13h8.906C14.502 13 16 11.57 16 9.773c0-1.636-1.242-2.969-2.834-3.194C12.923 3.999 10.69 2 8 2zm2.354 6.854-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 1 1 .708-.708L7.5 9.293V5.5a.5.5 0 0 1 1 0v3.793l1.146-1.147a.5.5 0 0 1 .708.708z"/>
                                     <use xlink:href="#table"/>
                                 </svg>
-                                Load From Database
+                                Database file
                                 </a>
+                                 <form method="GET" id="formDatabaseFile" action="/phyloviz/visualization/file">
+                                <div class="input-group mb-3">
+                                    <input name="databaseFile" class="form-control" type="file" id="inputJsonFile">  
+                                    <button id="submitDBFile"  type="submit" class="btn btn-sm btn-LIGHT">GO</button>  
+                                 </div>
+                                                               
+                                 </form>
+                                 
                             </li>
                             
                             <hr style="width:100%" size="5"  color="white">
@@ -137,7 +144,7 @@
                                                 <h5 class="modal-title" id="exampleModalLabel" style="color: black;">DATASET INFO</h5>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                             </div>
-                                            <div class="modal-body" id="GraphicInfo">
+                                            <div class="modal-body" id="GraphicInfo" >
                 
                                             </div>
                                             <!--<div class="modal-footer">
@@ -218,11 +225,23 @@
                                                     </div>
                                                     <label for="LinkLabelsRange" class="form-label">Label size:</label>
                                                     <input type="range" class="form-range" min="30" max="500" id="LinkLabelsRange" value="30">
-                                                    <label for="linkStrokeRange" class="form-label">Link stroke:</label>
-                                                    <input type="range" class="form-range" min="5" max="50" step="" id="linkStrokeRange" value="5" >
-                                               
+                                                    
                                                 </div>
-                                                
+                                                <label for="divLinkSize" class="mt-3 form-label">Link Size:</label>
+                                                 <div id="divLinkSize" class="mb-2 form-control">
+                                                    <label for="linkSizeRange" class="form-label">Scalling Factor:</label>
+                                                    <input type="range" class="mb-1 form-range" min="1" max="100" id="linkSizeRange" value="4">
+                                                    
+                                                    <div class="form-check ">
+                                                        <input class=" form-check-input" type="checkbox" value="" id="linkLogScale" checked>
+                                                        <label class="form-check-label" for="linkLogScale">
+                                                            Log Scale
+                                                        </label>
+                                                    </div>
+                                                    <label for="linkStrokeRange" class="form-label">Link stroke:</label>
+                                                    <input type="range" class="form-range" min="5" max="50" id="linkStrokeRange" value="7" >
+                                        
+                                                </div>
                                             </div>
                                         <button class=" mb-1 btn btn-secondary" type="button" data-toggle="collapse" data-target="#graphFilters" aria-expanded="false" style="width: 100%;">LAYOUT</button>
                                             <!-- LAYOUT -->

@@ -14,7 +14,7 @@ function flatten(root) {
             index++;
         }
         if (node.branchset){
-            nd.size = node.branchset.length
+            nd.isNodeLeaf = false;
             node.branchset.forEach(function(n){
                 var link = {}
                 link.source = node.name
@@ -25,6 +25,7 @@ function flatten(root) {
                 recurse(n)
             });
         }
+        else nd.isNodeLeaf = true;
         
         nd.key = node.name;
         nodes.push(nd);

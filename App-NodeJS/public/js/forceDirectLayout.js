@@ -2,26 +2,29 @@ window.onload = setup
 
 function setup(){
     var script = document.getElementById('forceDirectedLayout');
-    var data = script.getAttribute('json');
+    var json = script.getAttribute('json');
     
     try{
-        data = JSON.parse(data);
+        jsonData = JSON.parse(json);
+
+        links = jsonData.links
+        nodes = jsonData.nodes
+        metadata = jsonData.metadata
+        schemeGenes = jsonData.schemeGenes
+        subsetProfiles =  jsonData.subsetProfiles;
+        isolateData = jsonData.isolatesData;
     } catch(x){
         console.log(x);
         alert('Problem reading information. Insert again.');
         return;
     }
-
-    links = data.links
-    nodes = data.nodes
-    metadata = data.metadata
-    schemeGenes = data.schemeGenes
-    subsetProfiles =  data.subsetProfiles;
-    isolateData = data.isolatesData;
-
+   
+   
+    
     init(); 
     setVisibleControls();
     setGraphicFilters();
+    setGraphicInfo();
     createTables();
     setEventListenners();
 
@@ -54,12 +57,24 @@ function setEventListenners(){
     NodeSizeRange.addEventListener('input',changeNodeSize)
     nodeLogScale.addEventListener('change', changeNodeSize)
     nodeSizeKey.addEventListener('input',changeNodeSize)
-    /*nodeLogScale.addEventListener('change', function(){
-        nodeRadious = checkNodeLogScale(this.checked);
-    })*/
+
     linkStrokeRange.addEventListener('input',changeLinkStroke)
+    linkLogScale.addEventListener("change",changeLinkSize)
+    linkSizeRange.addEventListener("input",changeLinkSize)
 
     
+}
+
+function setGraphicInfo(){
+    graphicInfo
+    .innerHTML = 
+        `<div style="color: black;" class="graphicInfoText">
+            <b>Data set name: </b><p>${jsonData.dataset_name}</p>
+            <b>Data Type: </b><p>${jsonData.data_type}</p> 
+            <b>Node count: </b><p>${jsonData.nodes.length}</p>
+            <b>Scheme Genes: </b><p>${jsonData.schemeGenes}</p> 
+            <b>Metadata: </b><p>${jsonData.metadata}</p>  
+        </div>`
 }
 
 const switchNodeLabels = document.getElementById('NodeLabelsSwitch')
@@ -79,49 +94,40 @@ const nodeLogScale = document.getElementById('nodeLogScale');
 const nodeSizeKey = document.getElementById('nodeSizeKey');
 
 const linkStrokeRange = document.getElementById('linkStrokeRange');
+const linkSizeRange = document.getElementById('linkSizeRange');
+const linkLogScale = document.getElementById('linkLogScale');
+
+const pauseButton = document.getElementById('pauseButton')
+const graphicInfo = document.getElementById('GraphicInfo');
 
 /////////////////// FORCE DIRECT LAYOUT ///////////////////////////
 
 const height = window.innerHeight;
 const width = window.innerWidth;
-const defaultcollideForce = 5;
+const defaultcollideForce = 1;
 const defaultStrength = -20;
-const defaultNodeSize = 25;
+var strength = defaultStrength;
+var collideForce = defaultcollideForce;
 
 const svgCanvas ='#svgCanvas';
 const nodelabels = 'nodelabels';
 const linklabels ='linklabels';
-const colorExpand = "lightGray";
+const colorExpand = "#c6dbef";
+const colorLeafNodes = "#fd8d3c"
 const colorCollapse = "#000000";
 
 //const colorCollapse = "#3182bd";
-
+const defaultNodeSize = 25;
+const defaultLinkSize = 25;
 let nodeScaleFactor =  NodeSizeRange.value;
-let sizeKey;
-let linkStroke = 1.5;
-var strength = defaultStrength;
-var collideForce = defaultcollideForce;
+let linkScaleFactor = linkSizeRange.value;
+
 
 let linkForce;
-var linkDistance = function(d){return d.value ? d.value : 1};
-//var nodeRadious= checkNodeLogScale(checkNodeLogScale.checked);
-
-/*var withLog = function(d){
-    if(!d.backupSize) d.backupSize = DefaultnodeSize 
-    d.backupSize = Math.log10(d.backupSize) * DefaultnodeSize + (d.isolates.length * nodeScaleFactor);
-    d.size = d.backupSize;
-    return d.size;
-
-}
-var withoutLog = function(d){
-    d.backupSize = DefaultnodeSize + (d.isolates.length * nodeScaleFactor);
-    d.size = d.backupSize;
-    return d.size;
-}*/
 
 function nodeSize(d){
     var expr1 = defaultNodeSize;
-    var expr2 = (sizeKey ? d[sizeKey].length : 1) * nodeScaleFactor; 
+    var expr2 = (jsonData.sizeKey ? d[jsonData.sizeKey].length : 1) * (jsonData.nodeScaleFactor ? jsonData.nodeScaleFactor : nodeScaleFactor); 
     
     if(nodeLogScale.checked){
         d.backupSize = d.backupSize ? d.backupSize : expr1 + expr2;
@@ -130,10 +136,22 @@ function nodeSize(d){
     d.backupSize = expr1 + expr2
     d.size = d.backupSize;
            
-    return d.size;
-    
+    return d.size;   
 }
 
+function linkSize(l){
+    var expr1 = defaultLinkSize;
+    var expr2 = (l.value ? l.value : 1) + (jsonData.linkScaleFactor ? jsonData.linkScaleFactor : linkScaleFactor)*nodeSize(l.target) ; 
+    
+    if(linkLogScale.checked){
+        l.distance = l.distance ? l.distance : expr1 + expr2;
+        expr1 = defaultLinkSize * Math.log10(l.distance);
+    }
+    l.distance = expr1 + expr2
+    return l.distance;
+}
+
+let jsonData = {};
 let links = [], nodes = [];
 let metadata = [], schemeGenes = [];
 let subsetProfiles = [], isolateData =[];
@@ -146,16 +164,15 @@ let link, node;
 let linkText;
 let g;
 
-
 const colorSequence = d3.interpolateSinebow;
 function color(node,value){
     if(node.isCollapsed)
         return colorCollapse;
     if(value){
         var x = value(node);
-        return x ? x : colorExpand;
-    }
-    return colorExpand;
+        if(x) return x;
+    } 
+    return node.isNodeLeaf ? colorLeafNodes : colorExpand;
 }
 
 function init(){
@@ -172,7 +189,8 @@ function init(){
         });
 
     svg.call(zoom);
-    start();
+    
+    start()
 }
 
 function start(){
@@ -184,7 +202,7 @@ function start(){
         .enter()
         .append("g")
         .attr("class", "links")
-        .attr("id", d => (d.source+'-'+d.target))
+        .attr("id",d => (d.source+'-'+d.target))
         .append("line")
         .attr("class", "line")
 
@@ -210,9 +228,8 @@ function start(){
     node.append("text")
         .attr("class",nodelabels)
         .text(d => d.key)
-        
-    checker(switchNodeLabels.checked)
-    checkerLinks(switchLinkLabels.checked)
+    
+    
  
     node.selectAll("circle")
         .style("fill", color);
@@ -223,29 +240,57 @@ function start(){
         .on("drag", dragged)
         .on("end", dragended)
     );
+
+    if(jsonData.isSaved)
+        startDB();
+    checker(switchNodeLabels.checked)
+    checkerLinks(switchLinkLabels.checked)
     startSimulation();
+}
+
+function startDB(){
+    if(jsonData.nodeLabels){
+        rangeNodeLabelSize.value = jsonData.nodeLabelsSize;
+        changeNodeLabelSize()
+        switchNodeLabels.checked = jsonData.nodeLabels;
+    }
+    if(jsonData.linkLabels){
+        rangeLinkLabelSize.value = jsonData.linkLabelsSize;
+        changeLinkLabelSize()
+        switchLinkLabels.checked = jsonData.linkLabels;
+    }
+    if(jsonData.linkStroke)
+        link.style("stroke-width",jsonData.linkStroke)
+
+    if(jsonData.colorKey){
+        if(jsonData.colorKey.profile){
+            changeColorByProfile(null,jsonData.colorKey.profile)
+        } else
+            changeColorByIsolate(null,jsonData.colorKey.isolate)
+    } 
 }
 
 function startSimulation(){
     linkForce = d3.forceLink(links);
-    linkForce.id(d => d.key);
-    linkForce.distance(linkDistance);
-
+    linkForce.id(d => d.key).distance(linkSize)
+    
     simulation = d3.forceSimulation(nodes)
         .force("link", linkForce)
-        .force("charge", d3.forceManyBody().strength(strength))
+        .force("charge", d3.forceManyBody().strength(-300))
         .force("center", d3.forceCenter(width /2 , height/2))
-        .force("collide", d3.forceCollide().radius(d=>collideForce))
-        .alphaTarget(0.8)
+        .force("collide", d3.forceCollide().radius(d=>nodeSize(d)*1.5))
+        .alphaDecay(0)
         .on("tick", ticked);
 }
 
 ///// GRAPHIC LABELS //////
 function checker(checked) {
+    jsonData.nodeLabels = checked;
     checked ? showLabels(nodelabels) : hideLabels(nodelabels)
 }
 
 function checkerLinks(checked) {
+    jsonData.linkLabels = checked;
     checked ? showLabels(linklabels) : hideLabels(linklabels)
 }
   
@@ -266,36 +311,37 @@ function hideLabels(className) {
 }
 
 function changeNodeLabelSize(){
-    var size = rangeNodeLabelSize.value
+    jsonData.nodeLabelsSize = rangeNodeLabelSize.value
     node.selectAll("text")
-        .style("font-size",size)
+        .style("font-size",jsonData.nodeLabelsSize)
 }
 
 function changeLinkLabelSize(){
-    var size = rangeLinkLabelSize.value
+    jsonData.linkLabelsSize = rangeLinkLabelSize.value
     linkText
-        .style("font-size",size)
+        .style("font-size",jsonData.linkLabelsSize)
 }
 
 /////// NODE AND LINK SIZE ////////
 function changeNodeSize(){
-    nodeScaleFactor = NodeSizeRange.value
-    sizeKey = nodeSizeKey.value;
+    jsonData.nodeScaleFactor = NodeSizeRange.value
+    jsonData.sizeKey = nodeSizeKey.value;
+
     node.selectAll("circle")
         .attr("r", nodeSize);
-
-
 }
-/*
-function checkNodeLogScale(checked){ 
-    return checked ? withLog : withoutLog;
-    //changeNodeSize();
-}*/
 
 function changeLinkStroke(){
-    linkStroke = linkStrokeRange.value
+    jsonData.linkStroke = linkStrokeRange.value
     link
-        .style("stroke-width",linkStroke)
+        .style("stroke-width",jsonData.linkStroke)
+}
+
+function changeLinkSize(){
+    jsonData.linkScaleFactor = linkSizeRange.value
+    linkForce.distance(linkSize)
+    simulation.force("link", linkForce)
+
 }
 
 ///// GRAPHIC FORCES ////////
@@ -323,9 +369,9 @@ function resetForces(){
 /////// GRAPHIC MOVEMENT ////////
 function click(event, node){
     console.log("NODE CLICKED")
+    if(node.isNodeLeaf) return;
     var changeColor = document.getElementById(node.key)
-
-    var isNodeLeaf = true;
+    
     var isCollapsing = node.isCollapsed ? false : true;
     node.isCollapsed = isCollapsing;
     
@@ -338,9 +384,7 @@ function click(event, node){
             var source = n.source;
             var target = n.target;
             if(source.key == key){
-                //CHECK IF IS LEAF NODE
-                isNodeLeaf = false;
-
+           
                 //GET NEXT NODE ELEMENT
                 var nd = document.getElementById(target.key+"_node");
                 var elements = nd.children
@@ -383,9 +427,8 @@ function click(event, node){
                 element.setAttribute("visibility","visible")
         
     }
-
-    if(isNodeLeaf){ node.isCollapsed = !node.isCollapsed; }
-    else if(isCollapsing){ 
+ 
+    if(isCollapsing){ 
         node.previousColor = changeColor.style.fill;
         changeColor.style.fill = color(node)
     }else{
@@ -401,23 +444,23 @@ function click(event, node){
 function ticked() {
     try {
         link
-        .attr("x1", d => d.source.x)
-        .attr("y1", d => d.source.y)
-        .attr("x2", d => d.target.x)
-        .attr("y2", d => d.target.y);
+            .attr("x1", d => d.source.x)
+            .attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x)
+            .attr("y2", d => d.target.y);
 
-    linkText
-        .attr("x", function(d) {
-            return ((d.source.x + d.target.x)/2);
-        })
-        .attr("y", function(d) {
-            return ((d.source.y + d.target.y)/2);
-        });
-     
-    node
-        .attr("transform", function(d) {
-            return "translate(" + d.x + "," + d.y + ")";
-        })
+        linkText
+            .attr("x", function(d) {
+                return ((d.source.x + d.target.x)/2);
+            })
+            .attr("y", function(d) {
+                return ((d.source.y + d.target.y)/2);
+            });
+        
+        node
+            .attr("transform", function(d) {
+                return "translate(" + d.x + "," + d.y + ")";
+            })
     } catch (error) {
         console.log(error)
     }
@@ -426,21 +469,35 @@ function ticked() {
 }
 
 function dragstarted(d) {
-    if (!event.active) simulation.alphaTarget(0.3).restart();
-    d.subject.fx = d.x;
-    d.subject.fy = d.y;
+    try{
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.subject.fx = d.x;
+        d.subject.fy = d.y;
+    }catch (error) {
+        console.log(error)
+    }
+    
 
 }
 
 function dragged(d) {
-    d.subject.fx = d.x;
-    d.subject.fy = d.y;
+    try{ 
+        d.subject.fx = d.x;
+        d.subject.fy = d.y;
+    }catch (error) {
+        console.log(error)
+    }
 }
 
 function dragended(d) {
-    if (!event.active) simulation.alphaTarget(0);
-    d.subject.fx = null;
-    d.subject.fy = null;
+    try{
+        if (!event.active) simulation.alphaTarget(0);
+        d.subject.fx = null;
+        d.subject.fy = null;
+    }catch (error) {
+        console.log(error)
+    }
+    
 }
 
 /////// GRAPHIC BUTTONS ///////////////
@@ -452,7 +509,7 @@ function restartSimulation(){
 
 function pauseSimulation(){
     if(paused){
-        simulation.restart();
+        simulation = simulation.restart();
         node.call(d3
             .drag()
             .on("start", dragstarted)
@@ -465,7 +522,7 @@ function pauseSimulation(){
         btnPause.style.visibility = 'visible'
         paused = false;
     } else {
-        simulation.stop();
+        simulation = simulation.stop();
         node.call(d3
             .drag()
             .on("start", null)
@@ -483,6 +540,21 @@ function pauseSimulation(){
 
 function pinNodes(){
         
+}
+
+function save(){
+    console.log('SAVING')
+    try {
+        jsonData.isSaved = true
+        var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(jsonData));
+        var dlElem = document.getElementById('downloadElem');
+        dlElem.setAttribute("href",dataStr);
+        dlElem.setAttribute("download", jsonData.dataset_name + ".json");
+        dlElem.click()
+        console.log('SAVED WITH SUCESS')
+    } catch(err){
+        alert('Couldn\'t save file: \n' + err)
+    }
 }
 
 //////// DATA FILTERS /////////
@@ -519,14 +591,16 @@ function setGraphicFilters(){
     }
     
 }
+
 function changeColorByProfile(e,k){
     var colorScheme = {}
     var key = k ? k : profileColorFilter.value;
+    jsonData.colorKey = {profile : key}
 
-    if(key.includes('None') || key.includes('UNKNOWN')){
+    if(!key || key.includes('UNKNOWN')){
         node.selectAll("circle")
-            .style("fill",d => color(d));
-        return;
+            .style("fill",color);
+            return;
     }
 
     var index = schemeGenes.indexOf(key);
@@ -544,13 +618,16 @@ function changeColorByProfile(e,k){
         .domain([0,keys.length])
 
     var value = function(d){ 
-        if(d.profile[index]){  
-            var clr = myScale(keys.indexOf(d.profile[index]))
-            //console.log(clr +'-' + d.profile[index])
-            return clr;  
+        try{
+            if(d.profile[index]){  
+                var clr = myScale(keys.indexOf(d.profile[index]))
+                return clr;  
+            }
+            return null;
+        }catch(x){
+            console.log(x)
         }
-        return null;
-        }
+    } 
 
     node.selectAll("circle")
         .style("fill",x => color(x,value));
@@ -560,7 +637,8 @@ function changeColorByProfile(e,k){
 function changeColorByIsolate(e,k){
     var colorScheme = {}
     var key = k ? k : isolateColorFilter.value;
-    if(key.includes('None') || key.includes('UNKNOWN')){
+    jsonData.colorKey = {isolate : key}
+    if(!key || key.includes('UNKNOWN')){
         node.selectAll("circle")
             .style("fill",d => color(d));
         return;
@@ -580,12 +658,16 @@ function changeColorByIsolate(e,k){
         .domain([0,keys.length])
 
     var value = function(d){ 
-        if(d.isolates){
-            var clr = myScale(keys.indexOf(d.isolates[index]))
-            //console.log(clr +'-' + d.isolates[index])
-            return clr;
-        } 
-        return null;
+        try{ 
+            if(d.isolates){
+                var clr = myScale(keys.indexOf(d.isolates[index]))
+                //console.log(clr +'-' + d.isolates[index])
+                return clr;
+            } 
+            return null;
+        }catch(x){
+            console.log(x);
+        }
     }
 
     node.selectAll("circle")
@@ -890,7 +972,6 @@ function nextPageAux()
         }
     }
 }
-
 function changePage(page, tableBody)
 {
     var dataToShow = [];
@@ -932,6 +1013,8 @@ function numPages()
 
 //////////////////////// PIE CHARTS //////////////////////////////
 const pieLabelRegion = 'pieLabelRegion'
+const profilePieChartDiv = document.getElementById('profilePieChartDiv')
+const auxPieChartDiv = document.getElementById('auxPieChartDiv')
 
 function newPieChart(event){  
     var header = event.currentTarget.innerHTML;
@@ -939,6 +1022,7 @@ function newPieChart(event){
     var divTabel = document.getElementById('profileTablePanel')
     if(path.includes(divTabel)){
         //event.currentTarget.setAttribute("data-target","#profilePieChartDiv")
+        profilePieChartDiv.style.visibility = 'visible'
         var index = schemeGenes.indexOf(header);
         var elements = []
         subsetProfiles.forEach( row => {
@@ -947,7 +1031,7 @@ function newPieChart(event){
         buildPieChart(header, elements,'#profilePieChartSVG','#profilePieLabels');
     } else {
         //event.currentTarget.setAttribute("data-target","#auxPieChartDiv")
-
+        auxPieChartDiv.style.visibility = 'visible'
         var index = metadata.indexOf(header);
         var elements = []
         isolateData.forEach( row => {

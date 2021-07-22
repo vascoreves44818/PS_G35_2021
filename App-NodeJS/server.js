@@ -23,9 +23,9 @@ function init(done) {
 
         app.use(express.static('public'))
         app.get('/sitemap', sitemap(app))
-        app.use(bodyParser.json())
-        //app.use(bodyParser.text());
-        app.use(bodyParser.urlencoded({ extended: false })) // parse application/x-www-form-urlencoded
+        app.use(express.json({ limit: '200mb' }))
+        app.use(bodyParser.json({limit: '200mb'}))
+        app.use(bodyParser.urlencoded({limit:'200mb', extended: false })) // parse application/x-www-form-urlencoded
 
         // parse data with connect-multiparty. 
         app.use(formData.parse(options));
