@@ -1,9 +1,12 @@
 window.onload = setup
+
 let form = document.getElementById('formInputFile');
 let formDatabaseFile = document.getElementById('formDatabaseFile');
 let data;
 let profileData;
 let auxiliaryData;
+let headers = {'Content-Type': 'application/json'}
+
 
 function setup(){
   form.addEventListener('submit', logSubmit);
@@ -43,32 +46,32 @@ function logSubmit(event){
 
   Promise.all([data,profileData,auxiliaryData])
     .then((values) => {
-        const XHR = new XMLHttpRequest();
-        const FD  = new FormData();
-        
-        FD.append('datasetname', datasetname)
+        let body = {}
+        body.datasetname = datasetname
         if(values[0]){
-          FD.append('tree', values[0]);
+          body.tree = values[0]
         }
         if(values[1]){
-          FD.append('profileData', values[1]);
+          body.profileData = values[1]
         }
         if(values[2]){
-          FD.append('auxiliaryData', values[2]);
+          body.auxiliaryData = values[2]
         }
-        
-        XHR.addEventListener( 'load', function( event ) {
-          form.submit();
-        } );
-        // Define what happens in case of error
-        XHR.addEventListener('error', function( event ) {
-          alert( 'Oops! Something went wrong sending files.' );
-        } );
-        // Set up our request
-        XHR.open( 'POST', loc );
-        // Send our FormData object; HTTP headers are set automatically
-        XHR.send( FD );
 
+        fetch(loc, {
+          method: 'POST',
+          body: JSON.stringify(body),
+          headers: headers
+        }).then(resp => {
+            if(resp.status == 500){
+              alert(resp.json);
+              return;
+            } 
+            formDatabaseFile.submit();
+        })
+        .catch(err =>{          
+          alert( 'Oops! Something went wrong sending files: \n' + err );
+      })     
     })
     .catch(e => { 
       console.log(e.message);
@@ -81,6 +84,49 @@ function logSubmitDB(event){
   event.preventDefault();
   formDatabaseFile = document.getElementById('formDatabaseFile')
   const loc = "http://localhost:8080/phyloviz/insertDatabasefiles"
+  let db_file = document.getElementById('inputJsonFile')
+
+  let dbFile = db_file.files;
+
+  if(!dbFile || dbFile.length==0){
+    alert('No file inserted!')
+    return
+  }else{
+    readTextFile(dbFile[0])
+      .then(file => {
+        
+        if(!IsJsonString(file)){  
+          alert("File must be JSON")
+          return;
+        }
+
+        fetch(loc, {
+            method: 'POST',
+            body: JSON.stringify({dbFile: file}),
+            headers: headers
+        })
+        .then(resp => {
+            if(resp.status == 500){
+              alert(resp.json);
+              return;
+            } 
+            formDatabaseFile.submit();
+        })
+        .catch(err =>{          
+          alert( 'Oops! Something went wrong sending file: \n' + err );
+      })
+    })
+    .catch(e => { 
+      console.log(e.message);
+    });
+    
+  }
+}
+
+/*
+function logSubmitDB(event){
+  event.preventDefault();
+  formDatabaseFile = document.getElementById('formDatabaseFile')
   
   let db_file = document.getElementById('inputJsonFile')
 
@@ -107,7 +153,6 @@ function logSubmitDB(event){
         } );
         // Define what happens in case of error
         XHR.addEventListener('error', function( event ) {
-          alert( 'Oops! Something went wrong sending file.' );
         } );
         // Set up our request
         XHR.open( 'POST', loc );
@@ -120,7 +165,7 @@ function logSubmitDB(event){
     });
   }
 }
-
+*/
 function IsJsonString(str) {
     try {
       JSON.parse(str);

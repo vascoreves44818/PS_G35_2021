@@ -44,21 +44,29 @@ function readFiles(req,res,next){
                     res.end(JSON.stringify('File read with success!'));
                 })
         })
-        .catch(next)
+        .catch(err =>{
+            res.status = 500;
+            res.end(err)
+        })
          
 }
 
+
 function readDatabaseFiles(req,res,next){
-    const data = req.body;
-    phylo_db.getJson(data.dbFile)
+    const data = req.body.dbFile;
+    phylo_db.getJson(data)
         .then(dbData => {
             fileInfo = { 
                 json: JSON.stringify(dbData)
             }
             res.end(JSON.stringify('File read with success!'));
         })
-        .catch(next) 
+        .catch(err =>{
+            res.status = 500;
+            res.end(err)
+        }) 
 }
+
 
 function visualizationFromFile(req, res, next) {
     res.render('visualization',fileInfo)    
