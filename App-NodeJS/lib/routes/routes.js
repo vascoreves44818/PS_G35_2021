@@ -34,9 +34,11 @@ function readFiles(req,res,next){
     const profileData = data.profileData;
     const auxiliaryData = data.auxiliaryData;
     
-    phylo_file.createTables(profileData,auxiliaryData)
+    phylo_file
+        .createTables(profileData,auxiliaryData)
         .then(tableElements => {
-            phylo_file.getJson(tree,datasetname,tableElements)
+            phylo_file
+                .getJson(tree,datasetname,tableElements)
                 .then(treeInfo => {
                     fileInfo = { 
                         json: JSON.stringify(treeInfo),

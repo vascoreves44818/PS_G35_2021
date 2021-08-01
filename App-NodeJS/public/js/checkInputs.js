@@ -207,8 +207,6 @@ function readJsonFile(inputFile){
   });
 }
 
-
-
 function validateTreeForm() {
     var tree = document.getElementById("inputTree").value;
     if(tree=="" || !tree){
@@ -217,7 +215,6 @@ function validateTreeForm() {
     }
     return true;
 }
-
 
 document.addEventListener('DOMContentLoaded', function () {
   form.addEventListener('submit', logSubmit);

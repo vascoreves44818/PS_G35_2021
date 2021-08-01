@@ -153,7 +153,7 @@ function splitByline(data){
 }
 
 function splitByTab(data){
-    //TODO
+    console.log("TAB FILE")
 }
 
 module.exports = { parse, parseTables }

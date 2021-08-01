@@ -1,10 +1,57 @@
 window.onload = setup 
 
+const switchNodeLabels = document.getElementById('NodeLabelsSwitch')
+const rangeNodeLabelSize = document.getElementById('NodeLabelsRange')
+
+const switchLinkLabels = document.getElementById('LinkLabelsSwitch')
+const rangeLinkLabelSize = document.getElementById('LinkLabelsRange')
+
+const chargeForceRange = document.getElementById('chargeForceRange')
+const colideForceRange = document.getElementById('colideForceRange')
+
+const profileColorFilter = document.getElementById('profileColorFilter');
+const isolateColorFilter = document.getElementById('isolateColorFilter');
+
+const NodeSizeRange = document.getElementById('NodeSizeRange');
+const nodeLogScale = document.getElementById('nodeLogScale');
+const nodeSizeKey = document.getElementById('nodeSizeKey');
+
+const linkStrokeRange = document.getElementById('linkStrokeRange');
+const linkSizeRange = document.getElementById('linkSizeRange');
+const linkLogScale = document.getElementById('linkLogScale');
+
+const pauseButton = document.getElementById('pauseButton');
+const graphicInfo = document.getElementById('GraphicInfo');
+
+const searchGraph = document.getElementById('searchGraph');
+
+const height = window.innerHeight*6;
+const width = window.innerWidth*6;
+const defaultcollideForce = 1;
+const defaultStrength = -20;
+var strength = defaultStrength;
+var collideForce = defaultcollideForce;
+
+const svgCanvas ='#svgCanvas';
+const nodelabels = 'nodelabels';
+const linklabels ='linklabels';
+const colorExpand = "#c6dbef";
+const colorLeafNodes = "#fd8d3c"
+const colorCollapse = "#000000";
+
+//const colorCollapse = "#3182bd";
+const defaultNodeSize = 25;
+const defaultLinkSize = 20;
+const defaultNodeScaleFactor = 20;
+const defaultLinkScaleFactor = 4;
+const defaultLinkStroke = 5; 
+
 function setup(){
     var script = document.getElementById('forceDirectedLayout');
     var json = script.getAttribute('json');
     
     try{
+        json = json.replaceAll('---',' ')
         jsonData = JSON.parse(json);
 
         links = jsonData.links
@@ -20,8 +67,8 @@ function setup(){
     }
    
    
-    
     init(); 
+    setValues();
     setVisibleControls();
     setGraphicFilters();
     setGraphicInfo();
@@ -77,85 +124,22 @@ function setGraphicInfo(){
         </div>`
 }
 
-const switchNodeLabels = document.getElementById('NodeLabelsSwitch')
-const rangeNodeLabelSize = document.getElementById('NodeLabelsRange')
+function setValues(){
+    NodeSizeRange.value = jsonData.nodeScaleFactor ? jsonData.nodeScaleFactor : defaultNodeScaleFactor;
+    linkSizeRange.value = jsonData.linkScaleFactor ? jsonData.linkScaleFactor : defaultLinkScaleFactor;
+    nodeSizeKey.value = jsonData.sizeKey ? jsonData.sizeKey : '';
+    linkStrokeRange.value = jsonData.linkStroke ? jsonData.linkStroke : defaultLinkStroke;   
 
-const switchLinkLabels = document.getElementById('LinkLabelsSwitch')
-const rangeLinkLabelSize = document.getElementById('LinkLabelsRange')
-
-const chargeForceRange = document.getElementById('chargeForceRange')
-const colideForceRange = document.getElementById('colideForceRange')
-
-const profileColorFilter = document.getElementById('profileColorFilter');
-const isolateColorFilter = document.getElementById('isolateColorFilter');
-
-const NodeSizeRange = document.getElementById('NodeSizeRange');
-const nodeLogScale = document.getElementById('nodeLogScale');
-const nodeSizeKey = document.getElementById('nodeSizeKey');
-
-const linkStrokeRange = document.getElementById('linkStrokeRange');
-const linkSizeRange = document.getElementById('linkSizeRange');
-const linkLogScale = document.getElementById('linkLogScale');
-
-const pauseButton = document.getElementById('pauseButton')
-const graphicInfo = document.getElementById('GraphicInfo');
+}
 
 /////////////////// FORCE DIRECT LAYOUT ///////////////////////////
-
-const height = window.innerHeight;
-const width = window.innerWidth;
-const defaultcollideForce = 1;
-const defaultStrength = -20;
-var strength = defaultStrength;
-var collideForce = defaultcollideForce;
-
-const svgCanvas ='#svgCanvas';
-const nodelabels = 'nodelabels';
-const linklabels ='linklabels';
-const colorExpand = "#c6dbef";
-const colorLeafNodes = "#fd8d3c"
-const colorCollapse = "#000000";
-
-//const colorCollapse = "#3182bd";
-const defaultNodeSize = 25;
-const defaultLinkSize = 25;
-let nodeScaleFactor =  NodeSizeRange.value;
-let linkScaleFactor = linkSizeRange.value;
-
-
+const colorSequence = d3.interpolateSinebow;
+const zoom = d3.zoom();
 let linkForce;
-
-function nodeSize(d){
-    var expr1 = defaultNodeSize;
-    var expr2 = (jsonData.sizeKey ? d[jsonData.sizeKey].length : 1) * (jsonData.nodeScaleFactor ? jsonData.nodeScaleFactor : nodeScaleFactor); 
-    
-    if(nodeLogScale.checked){
-        d.backupSize = d.backupSize ? d.backupSize : expr1 + expr2;
-        expr1 = defaultNodeSize * Math.log10(d.backupSize)
-    }
-    d.backupSize = expr1 + expr2
-    d.size = d.backupSize;
-           
-    return d.size;   
-}
-
-function linkSize(l){
-    var expr1 = defaultLinkSize;
-    var expr2 = (l.value ? l.value : 1) + (jsonData.linkScaleFactor ? jsonData.linkScaleFactor : linkScaleFactor)*nodeSize(l.target) ; 
-    
-    if(linkLogScale.checked){
-        l.distance = l.distance ? l.distance : expr1 + expr2;
-        expr1 = defaultLinkSize * Math.log10(l.distance);
-    }
-    l.distance = expr1 + expr2
-    return l.distance;
-}
-
 let jsonData = {};
 let links = [], nodes = [];
 let metadata = [], schemeGenes = [];
 let subsetProfiles = [], isolateData =[];
-
 let paused = false;
 let pinned = false;
 let simulation;
@@ -164,28 +148,18 @@ let link, node;
 let linkText;
 let g;
 
-const colorSequence = d3.interpolateSinebow;
-function color(node,value){
-    if(node.isCollapsed)
-        return colorCollapse;
-    if(value){
-        var x = value(node);
-        if(x) return x;
-    } 
-    return node.isNodeLeaf ? colorLeafNodes : colorExpand;
-}
-
 function init(){
     svg = d3.select(svgCanvas)
-        .attr("viewBox", [0, 0, width*2, height*2]);
-
+        .attr("viewBox", [0,0, width, height]);
+        
     link = svg.selectAll(".link")
     node = svg.selectAll(".node");
-    g = svg.append("g");
+    g = svg.append("g").attr("id", 'gSvg');
 
-    const zoom = d3.zoom()
+    zoom
         .on("zoom", function({transform}){
             g.attr("transform", transform);
+            jsonData.transform = transform;
         });
 
     svg.call(zoom);
@@ -241,14 +215,19 @@ function start(){
         .on("end", dragended)
     );
 
-    if(jsonData.isSaved)
-        startDB();
+    if(jsonData.isSaved){
+        startDBfilters();
+        startSimulation();
+        setTimeout(pauseSimulation, 500)
+    }
+    else{ 
+        startSimulation();
+    }
     checker(switchNodeLabels.checked)
     checkerLinks(switchLinkLabels.checked)
-    startSimulation();
 }
 
-function startDB(){
+function startDBfilters(){
     if(jsonData.nodeLabels){
         rangeNodeLabelSize.value = jsonData.nodeLabelsSize;
         changeNodeLabelSize()
@@ -259,28 +238,53 @@ function startDB(){
         changeLinkLabelSize()
         switchLinkLabels.checked = jsonData.linkLabels;
     }
-    if(jsonData.linkStroke)
-        link.style("stroke-width",jsonData.linkStroke)
 
+    changeLinkStroke(); 
+    
     if(jsonData.colorKey){
         if(jsonData.colorKey.profile){
             changeColorByProfile(null,jsonData.colorKey.profile)
-        } else
+            profileColorFilter.value = jsonData.colorKey.profile;
+        } else { 
             changeColorByIsolate(null,jsonData.colorKey.isolate)
+            isolateColorFilter.value = jsonData.colorKey.isolate
+        }
     } 
+
+    
+    if(jsonData.transform){
+        var transform = jsonData.transform;
+        
+        g.attr("transform", "translate(" + transform.x + "," + transform.y + ") scale(" + transform.k + ")");
+        //zoom.translateBy(g,transform.x,transform.y)
+        //zoom.scaleBy(g,transform.k)
+    }
+    
+
 }
 
 function startSimulation(){
+    
     linkForce = d3.forceLink(links);
-    linkForce.id(d => d.key).distance(linkSize)
+    linkForce.id(d => d.key)
+        .distance(d => d.distance ? d.distance : linkSize(d))
+    
+    jsonData.collideForce = jsonData.collideForce ? jsonData.collideForce : (defaultNodeSize + (jsonData.nodeScaleFactor ? jsonData.nodeScaleFactor : defaultNodeScaleFactor))
     
     simulation = d3.forceSimulation(nodes)
         .force("link", linkForce)
         .force("charge", d3.forceManyBody().strength(-300))
         .force("center", d3.forceCenter(width /2 , height/2))
-        .force("collide", d3.forceCollide().radius(d=>nodeSize(d)*1.5))
+        .force("collide", d3.forceCollide().radius(jsonData.collideForce))
         .alphaDecay(0)
         .on("tick", ticked);
+    
+}
+
+function resizeView(){
+    let fullsize = $('.gSvg').getBoundingClientRect();
+    //const fullSize = document.getElementsByClassName('.gSvg')[0].getBoundingClientRect();
+    svg.attr("viewBox", [fullsize.x, fullsize.y, fullsize.width, height]);
 }
 
 ///// GRAPHIC LABELS //////
@@ -322,7 +326,7 @@ function changeLinkLabelSize(){
         .style("font-size",jsonData.linkLabelsSize)
 }
 
-/////// NODE AND LINK SIZE ////////
+/////// NODE AND LINK COLOR & SIZE ////////
 function changeNodeSize(){
     jsonData.nodeScaleFactor = NodeSizeRange.value
     jsonData.sizeKey = nodeSizeKey.value;
@@ -343,6 +347,45 @@ function changeLinkSize(){
     simulation.force("link", linkForce)
 
 }
+
+function color(node,value){
+    if(node.isCollapsed)
+        return colorCollapse;
+    if(value){
+        var x = value(node);
+        if(x) return x;
+    } 
+    return node.isNodeLeaf ? colorLeafNodes : colorExpand;
+}
+
+function nodeSize(d){
+    var expr1 = defaultNodeSize;
+    var sclFctr = (jsonData.nodeScaleFactor ? jsonData.nodeScaleFactor : defaultNodeScaleFactor);
+    var expr2 = ((jsonData.sizeKey && d[jsonData.sizeKey]) ? d[jsonData.sizeKey].length : 1) * sclFctr; 
+
+    if(nodeLogScale.checked){
+        d.backupSize = d.backupSize ? d.backupSize : expr1 + expr2;
+        expr1 = defaultNodeSize * Math.log10(d.backupSize)
+    }
+    d.backupSize = expr1 + expr2
+    d.size = d.backupSize;
+           
+    return d.size;   
+}
+
+function linkSize(l){
+    var expr1 = defaultLinkSize;
+    var sclFctr =(jsonData.linkScaleFactor ? jsonData.linkScaleFactor : defaultLinkScaleFactor)*nodeSize(l.target) ;
+    var expr2 = (l.value ? l.value : 1) + sclFctr; 
+    
+    if(linkLogScale.checked){
+        l.distance = l.distance ? l.distance : expr1 + expr2;
+        expr1 = defaultLinkSize * Math.log10(l.distance);
+    }
+    l.distance = expr1 + expr2
+    return l.distance;
+}
+
 
 ///// GRAPHIC FORCES ////////
 function changeChargeForce(){
@@ -545,7 +588,10 @@ function pinNodes(){
 function save(){
     console.log('SAVING')
     try {
+        var gPosition = document.getElementById('gSvg').getAttribute("transform")
+        jsonData.graphPosition = gPosition;
         jsonData.isSaved = true
+        
         var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(jsonData));
         var dlElem = document.getElementById('downloadElem');
         dlElem.setAttribute("href",dataStr);
@@ -555,6 +601,31 @@ function save(){
     } catch(err){
         alert('Couldn\'t save file: \n' + err)
     }
+}
+
+function searchGraphByNode(){
+    const nodeKey = searchGraph.value;
+    
+    let ndArray = nodes.filter(node=>{
+        return node.key === nodeKey;
+    })
+    
+    if(ndArray[0]){
+        if(!paused)
+            pauseSimulation();
+        var nd = ndArray[0];
+        var scale = 5;
+        zoom.translateTo(g,nd.x,nd.y)
+        zoom.scaleTo(g,scale)
+        /*var translateX = width / 2 - scale * nd.x;
+        var translateY =  height / 2 - scale * nd.y;
+        g.attr("transform", "translate(" + translateX + "," + translateY + ") scale(" + scale + ")");*/
+        
+
+    }
+    
+
+
 }
 
 //////// DATA FILTERS /////////
@@ -1015,47 +1086,50 @@ function numPages()
 const pieLabelRegion = 'pieLabelRegion'
 const profilePieChartDiv = document.getElementById('profilePieChartDiv')
 const auxPieChartDiv = document.getElementById('auxPieChartDiv')
+let pieCharProfiletKeys = [];
+let pieChartAuxKeys = [];
 
 function newPieChart(event){  
     var header = event.currentTarget.innerHTML;
     var path = event.path;
     var divTabel = document.getElementById('profileTablePanel')
     if(path.includes(divTabel)){
-        //event.currentTarget.setAttribute("data-target","#profilePieChartDiv")
         profilePieChartDiv.style.visibility = 'visible'
-        var index = schemeGenes.indexOf(header);
-        var elements = []
-        subsetProfiles.forEach( row => {
-            elements.push(row.profile[index]);
-        })
-        buildPieChart(header, elements,'#profilePieChartSVG','#profilePieLabels');
+        if(pieCharProfiletKeys.length == 2 )
+            pieCharProfiletKeys = [];   
+        pieCharProfiletKeys.push(header);
+        buildPieChartProfileData(pieCharProfiletKeys)
+            .then(elements => {
+                buildPieChart(pieCharProfiletKeys, elements,'#profilePieChartSVG','#profilePieLabels','profilePieChartTitle');
+            })  
+            .catch(message =>{alert(message)})
     } else {
-        //event.currentTarget.setAttribute("data-target","#auxPieChartDiv")
         auxPieChartDiv.style.visibility = 'visible'
-        var index = metadata.indexOf(header);
-        var elements = []
-        isolateData.forEach( row => {
-            elements.push(row.isolate[index]);
-        })
-        buildPieChart(header, elements,'#auxPieChartSVG','#auxPieLabels');
+        if(pieChartAuxKeys.length == 2)
+            pieChartAuxKeys = []
+        pieChartAuxKeys.push(header);
+        buildPieChartAuxData(pieChartAuxKeys)
+            .then(elements => {
+                buildPieChart(pieChartAuxKeys, elements,'#auxPieChartSVG','#auxPieLabels','auxPieChartTitle');
+            })
+            .catch(message =>{alert(message)})
+        
     }  
 }
 
-function buildPieChart(name,data,id,legendID){
+function buildPieChart(names,data,id,legendID,titleID){
     
-    var w = 300,
-    h = 300;
+    var w = 250,
+    h = 250;
     var  rds= 150; 
     d3.select(id).selectAll("*").remove();
 
     var svgPieChart = d3.select(id)
-        .attr("viewBox", [0, 0, 320, 310])
+        .attr("viewBox", [-40, 0, 320, 240])
         .attr("width",w)
         .attr("height",h)
-        
-
-
-    data = buildJsonNumberOfOccurences(data);
+    
+    data = buildJsonNumberOfOccurences(names,data);
     
     var keys = Object.keys(data);
     var obj = Object.entries(data);
@@ -1076,10 +1150,12 @@ function buildPieChart(name,data,id,legendID){
         .selectAll("arc")
         .data(pie(obj))
         .enter()
+        
 
     var path = d3.arc()
-        .innerRadius(0)
-        .outerRadius(rds);
+        .innerRadius(50)
+        .outerRadius(rds)
+        
           
     var colors = {};
     arc.append("path")
@@ -1091,8 +1167,19 @@ function buildPieChart(name,data,id,legendID){
                 if(!colors[dt])  colors[dt] = clr;
                 //console.log(dt + '-' + clr);
                 return clr;
-        });   
+        })
+        .on('mouseover', function (d, i) {
+            d3.select(this).transition()
+                 .duration('50')
+                 .attr('opacity', '.85')})
+       .on('mouseout', function (d, i) {
+            d3.select(this).transition()
+                 .duration('50')
+                 .attr('opacity', '1')}); 
+        
+
     buildPieChartLabels(colors,legendID);
+    buildPieChartTitle(names,keys.length,titleID)
 
 }
 
@@ -1117,7 +1204,6 @@ function buildPieChartLabels(colors,legendID){
         var g = svgPieLabels.append('g')            
             .attr("transform","translate(0,"+jumpY*i+")")
 
-
         var rect = g.append('rect')
             .attr("width","15px")
             .attr("height","15px")
@@ -1137,7 +1223,45 @@ function buildPieChartLabels(colors,legendID){
     }
 }
 
-function buildJsonNumberOfOccurences(data){
+function buildPieChartTitle(name,size,titleID){
+    
+    var divid = document.getElementById(titleID)
+    if(name.length==1){
+        divid.innerHTML =  `<h5><b>${name[0]}</b></h5><b>Total Categories: </b>${size}`
+    } else {
+        divid.innerHTML =  `<h5><b>${name[0]} & ${name[1]}</b></h5><b>Total Categories: </b>${size}`
+    }
+    
+    divid.style.textAlign = 'center'
+    
+}
+
+function buildJsonNumberOfOccurences(names,data){
+    if(names.length == 1){
+        var counts = {};
+        var dt = data[names[0]]
+        for (var i = 0; i < dt.length; i++) {
+            var num = dt[i];
+            counts[num] = counts[num] ? counts[num] + 1 : 1;
+        }
+        return counts;
+    } else{
+        var counts = {};
+        var nm1 = names[0];
+        var nm2 = names[1]
+        var dt1 = data[nm1];
+        var dt2 = data[nm2];
+        for(var i = 0; i< dt1.length;++i){
+            for(var j = 0; j< dt2.length;++j){
+                var num = dt1[i] + '&' + dt2[j];
+                counts[num] = counts[num] ? counts[num] + 1 : 1;
+            }
+        }
+        return counts;
+    }
+}
+
+function buildJsonSingleHeader(data){
     var counts = {};
 
     for (var i = 0; i < data.length; i++) {
@@ -1146,6 +1270,57 @@ function buildJsonNumberOfOccurences(data){
     }
     return counts;
    
+}
+
+function buildPieChartProfileData(pieKeys){
+    return new Promise((resolve, reject) => {
+        try{
+            var elements = {};
+            pieKeys.forEach( key => { 
+                var index = schemeGenes.indexOf(key);
+                var array = []
+                subsetProfiles.forEach( row => {
+                    array.push(row.profile[index]);
+                })
+                elements[key] = array
+            })
+            resolve(elements)
+        } catch(x){
+            reject('Error building Pie Chart');
+            console.log(x.message);
+        }
+    })
+}
+
+function buildPieChartAuxData(pieKeys){
+    return new Promise((resolve, reject) => {
+        var elements = {}
+        try{
+            pieKeys.forEach(key =>{
+                var index = metadata.indexOf(key);
+                var array = []
+                isolateData.forEach( row => {
+                    array.push(row.isolate[index]);
+                })
+                elements[key] = array
+            })
+            
+            resolve(elements)
+        } catch(x){
+            reject('Error building Pie Chart');
+            console.log(x.message);
+        }
+    })
+}
+
+function cleanProfileKeys(event){
+    profilePieChartDiv.style.visibility = 'hidden';
+    pieCharProfiletKeys = [];
+}
+
+function cleanAuxKeys(event){
+    auxPieChartDiv.style.visibility = 'hidden'
+    pieChartAuxKeys = [];
 }
 
 /**
@@ -1164,3 +1339,5 @@ function buildJsonNumberOfOccurences(data){
                 ${message}
             </div>`
 }
+
+document.addEventListener('DOMContentLoaded', setEventListenners)
