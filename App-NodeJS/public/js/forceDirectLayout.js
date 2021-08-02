@@ -218,7 +218,18 @@ function start(){
     if(jsonData.isSaved){
         startDBfilters();
         startSimulation();
+        nodes.map(x=>{
+            if(x.isCollapsed){
+                var changeColor = document.getElementById(x.key)
+                changeColor.style.fill = x.previousColor
+                x.previousColor = null;
+                x.isCollapsed = false;
+                click(null,x)
+            }
+            
+        })
         setTimeout(pauseSimulation, 500)
+        
     }
     else{ 
         startSimulation();
@@ -1156,7 +1167,7 @@ function buildPieChart(names,data,id,legendID,titleID){
         .innerRadius(50)
         .outerRadius(rds)
         
-          
+    var lbl;
     var colors = {};
     arc.append("path")
         .attr("d", path)
@@ -1171,11 +1182,20 @@ function buildPieChart(names,data,id,legendID,titleID){
         .on('mouseover', function (d, i) {
             d3.select(this).transition()
                  .duration('50')
-                 .attr('opacity', '.85')})
+                 .attr('opacity', '.85')
+            var divid = document.getElementById(titleID)    
+            lbl =  divid.innerHTML;
+            
+            let percentage = (i.endAngle - i.startAngle)/(2*Math.PI)*100
+            divid.innerHTML += `<br><i class="bi bi-archive-fill">${i.data[0]} Count: ${i.data[1]} - ${percentage}%</i>`
+            })
        .on('mouseout', function (d, i) {
             d3.select(this).transition()
                  .duration('50')
-                 .attr('opacity', '1')}); 
+                 .attr('opacity', '1')
+            var divid = document.getElementById(titleID)    
+            divid.innerHTML =  lbl;
+            }); 
         
 
     buildPieChartLabels(colors,legendID);
