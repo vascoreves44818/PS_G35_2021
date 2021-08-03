@@ -9,20 +9,20 @@ const unknown = 'UNKNOWN_'
 function flatten(root) {
     function recurse(node){
         var nd = {};
-        if(node.name.length == 0){ 
+        if(node.name.length == 0 || node.name === '' || node.name === ' ' || node.name === '_' || node.name === undefined || node.name === null){ 
             node.name = unknown+index;
             index++;
         }
         if (node.branchset){
             nd.isNodeLeaf = false;
             node.branchset.forEach(function(n){
+                recurse(n)
                 var link = {}
                 link.source = node.name
                 link.target = n.name 
                 if(n.length)
                     link.value = n.length
                 links.push(link)
-                recurse(n)
             });
         }
         else nd.isNodeLeaf = true;

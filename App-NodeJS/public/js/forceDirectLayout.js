@@ -25,6 +25,8 @@ const graphicInfo = document.getElementById('GraphicInfo');
 
 const searchGraph = document.getElementById('searchGraph');
 
+const linkToTreeBtn = document.getElementById('linkToTreeBtn');
+
 const height = window.innerHeight*6;
 const width = window.innerWidth*6;
 const defaultcollideForce = 1;
@@ -108,6 +110,8 @@ function setEventListenners(){
     linkStrokeRange.addEventListener('input',changeLinkStroke)
     linkLogScale.addEventListener("change",changeLinkSize)
     linkSizeRange.addEventListener("input",changeLinkSize)
+
+    linkToTreeBtn.addEventListener("click",linkToTree)
 
     
 }
@@ -1099,6 +1103,8 @@ const profilePieChartDiv = document.getElementById('profilePieChartDiv')
 const auxPieChartDiv = document.getElementById('auxPieChartDiv')
 let pieCharProfiletKeys = [];
 let pieChartAuxKeys = [];
+let colors;
+let pieData;
 
 function newPieChart(event){  
     var header = event.currentTarget.innerHTML;
@@ -1140,10 +1146,10 @@ function buildPieChart(names,data,id,legendID,titleID){
         .attr("width",w)
         .attr("height",h)
     
-    data = buildJsonNumberOfOccurences(names,data);
+        pieData = buildJsonNumberOfOccurences(names,data);
     
-    var keys = Object.keys(data);
-    var obj = Object.entries(data);
+    var keys = Object.keys(pieData);
+    var obj = Object.entries(pieData);
 
    
     let gElement = svgPieChart.append("g")
@@ -1168,7 +1174,7 @@ function buildPieChart(names,data,id,legendID,titleID){
         .outerRadius(rds)
         
     var lbl;
-    var colors = {};
+    colors = {};
     arc.append("path")
         .attr("d", path)
         .attr("fill", 
@@ -1216,6 +1222,7 @@ function buildPieChartLabels(colors,legendID){
     var svgPieLabels = d3.select(legendID)
         .attr("viewBox", [0, 0, w, size])
     
+    
     for(var element in colors){
         i++;
         //colors[element] => cor
@@ -1233,6 +1240,7 @@ function buildPieChartLabels(colors,legendID){
         rect.style("fill",colors[element])
 
         var text = g.append('text')
+        
         text
             .attr("x",20)
             .attr("y",7.5)
@@ -1332,6 +1340,99 @@ function buildPieChartAuxData(pieKeys){
         }
     })
 }
+
+function buildJsonNumberOfOccurencesByIsolate(){
+    return new Promise((resolve,reject) => {
+        var data = {};
+        
+        try{
+            if(pieChartAuxKeys.length == 1){
+                var key = pieChartAuxKeys[0]
+                var idIndex = 0;
+                var infoIndex = metadata.indexOf(key);
+
+
+                isolateData.forEach(element =>{
+                    if(element.isolate){
+                        var arr = element.isolate;
+                        var st = arr[idIndex]
+                        var value = arr[infoIndex]
+                        if(!data[st])
+                            data[st] = {}
+                        data[st][value] = data[st][value] ? data[st][value]+1 : 1;
+                    }
+                })
+            }
+            else{
+                var key1 = pieChartAuxKeys[0]
+                var key2 = pieChartAuxKeys[1]
+                var idIndex = 0;
+                var infoIndex1 = metadata.indexOf(key1);
+                var infoIndex2 = metadata.indexOf(key2)
+
+                isolateData.forEach(element =>{
+                    if(element.isolate){
+                        var arr = element.isolate;
+                        var st = arr[idIndex];
+                        var value = arr[infoIndex1]+'&'+arr[infoIndex2];
+                        if(!data[st])
+                            data[st] = {}
+                        data[st][value] = data[st][value] ? data[st][value]+1 : 1;
+                    }
+                })
+            }
+            resolve(data);
+
+        } catch(e){
+            console.log(e.message);
+        }
+        
+    })
+}
+
+function linkToTree(event){
+    buildJsonNumberOfOccurencesByIsolate()
+        .then(elements =>{
+            buildNodePies(elements)
+        })
+    
+}
+
+function buildNodePies(data){
+    node.each(function (d) {
+        drawNodePie(d3.select(this), data[d.key] ,d.pieChart)
+    });
+}
+
+function drawNodePie(nodeElement, data) {    
+    if (!data) return;
+    drawPieChart(nodeElement, data);
+}
+
+function drawPieChart(nodeElement, data) {
+    var radius = nodeSize(nodeElement);
+
+    var keys = Object.keys(data);
+    var obj = Object.entries(data);
+    
+    var pie = d3.pie()
+        .value(function(d) {return d[1]; });
+
+    var arc = nodeElement
+        .selectAll("arc")
+        .data(pie(obj))
+        .enter()
+        
+
+    var path = d3.arc()
+        .innerRadius(0)
+        .outerRadius(radius)
+        
+    arc.append("path")
+        .attr("d", path)
+        .attr("fill", d => colors[d.data[0]])
+}
+
 
 function cleanProfileKeys(event){
     profilePieChartDiv.style.visibility = 'hidden';
