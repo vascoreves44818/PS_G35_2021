@@ -31,9 +31,7 @@ const linkToTreeBtn = document.getElementById('linkToTreeBtn');
 const height = window.innerHeight*6;
 const width = window.innerWidth*6;
 const defaultcollideForce = 1;
-const defaultStrength = -20;
-var strength = defaultStrength;
-var collideForce = defaultcollideForce;
+const defaultStrength = -300;
 
 const svgCanvas ='#svgCanvas';
 const nodelabels = 'nodelabels';
@@ -134,6 +132,9 @@ function setValues(){
     linkSizeRange.value = jsonData.linkScaleFactor ? jsonData.linkScaleFactor : defaultLinkScaleFactor;
     nodeSizeKey.value = jsonData.sizeKey ? jsonData.sizeKey : '';
     linkStrokeRange.value = jsonData.linkStroke ? jsonData.linkStroke : defaultLinkStroke;   
+    chargeForceRange.value = defaultStrength
+    colideForceRange.value = defaultcollideForce
+
 
 }
 
@@ -286,10 +287,11 @@ function startSimulation(){
         .distance(d => d.distance ? d.distance : linkSize(d))
     
     jsonData.collideForce = jsonData.collideForce ? jsonData.collideForce : (defaultNodeSize + (jsonData.nodeScaleFactor ? jsonData.nodeScaleFactor : defaultNodeScaleFactor))
+    jsonData.strength = jsonData.strength ? jsonData.strength : defaultStrength;
     
     simulation = d3.forceSimulation(nodes)
         .force("link", linkForce)
-        .force("charge", d3.forceManyBody().strength(-300))
+        .force("charge", d3.forceManyBody().strength(jsonData.strength))
         .force("center", d3.forceCenter(width /2 , height/2))
         .force("collide", d3.forceCollide().radius(jsonData.collideForce))
         .alphaDecay(0)
@@ -313,28 +315,7 @@ function checkerLinks(checked) {
     jsonData.linkLabels = checked;
     checked ? showLabels(linklabels) : hideLabels(linklabels)
 }
-/*  
-function showLabels(className) {
-    var labels = document.getElementsByClassName(className)
-    for (i = 0; i < labels.length; i++) {
-        var prElm  = labels[i].parentElement;
-        
-        var visibility = prElm.style.visibility
 
-        if(visibility!='hidden')
-            labels[i].style.visibility='visible';
-    }
-}
-
-function hideLabels(className) {
-    var labels = document.getElementsByClassName(className)
-    
-    for (i = 0; i < labels.length; i++) {
-        labels[i].style.visibility='hidden';
-    }
-}
-
- */ 
 function showLabels(className) {
     var labels = document.getElementsByClassName(className)
     for (i = 0; i < labels.length; i++) {
@@ -426,22 +407,23 @@ function linkSize(l){
 
 ///// GRAPHIC FORCES ////////
 function changeChargeForce(){
-    strength = chargeForceRange.value
-    simulation.force("charge", d3.forceManyBody().strength(strength))
+    jsonData.strength = chargeForceRange.value
+    
+    simulation.force("charge", d3.forceManyBody().strength(jsonData.strength))
 }
 
 function changeColideForce(){
-    collideForce = colideForceRange.value
+    var chck = (defaultNodeSize + (jsonData.nodeScaleFactor ? jsonData.nodeScaleFactor : defaultNodeScaleFactor))
+    jsonData.collideForce = colideForceRange.value +chck;
     simulation
-        .force("collide", d3.forceCollide().radius(d => collideForce*nodeSize(d)))
+        .force("collide", d3.forceCollide().radius(jsonData.collideForce))
 
 }
 
 function resetForces(){
-    strength = defaultStrength;
-    collideForce = defaultcollideForce;
-    chargeForceRange.value = strength ;
-    colideForceRange.value = collideForce;
+    
+    chargeForceRange.value = defaultStrength ;
+    colideForceRange.value = defaultcollideForce;
     changeChargeForce();
     changeColideForce();
 }
@@ -502,14 +484,11 @@ function click(event, node){
 
         if (visibility==null || visibility=='visible' || visibility =='' || visibility == undefined){ 
             element.style.visibility = "hidden"
-            //element.isVisible = 'hidden'
         }else if((type==nodelabels && !switchNodeLabels.checked) || (type==linklabels && !switchLinkLabels.checked)){
             element.style.visibility="hidden"
-            //element.isVisible = 'hidden'
         }
         else{ 
             element.style.visibility="visible"
-            //element.isVisible = 'visible'
         }
         
     }
@@ -1233,6 +1212,7 @@ function newPieChart(event){
         profilePieChartDiv.style.visibility = 'visible'
         if(pieCharProfiletKeys.length == 2 )
             pieCharProfiletKeys = [];   
+        else if(pieCharProfiletKeys[0] == header) return; 
         pieCharProfiletKeys.push(header);
         buildPieChartProfileData(pieCharProfiletKeys)
             .then(elements => {
@@ -1243,6 +1223,8 @@ function newPieChart(event){
         auxPieChartDiv.style.visibility = 'visible'
         if(pieChartAuxKeys.length == 2)
             pieChartAuxKeys = []
+        else if(pieChartAuxKeys[0] == header) return;
+
         pieChartAuxKeys.push(header);
         buildPieChartAuxData(pieChartAuxKeys)
             .then(elements => {
