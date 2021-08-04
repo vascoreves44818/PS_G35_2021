@@ -1,7 +1,17 @@
 <script type="text/javascript" src="/js/checkInputs.js"></script>
 <div class="tab-content" id="myTabContent">
     <div class="tab-pane fade show active col py-3" id="canvasGraph" role="tabpanel" aria-labelledby="home-tab">
-            <svg id="svgCanvas" ></svg>
+            <div style="display: flex;">
+                <svg id="svgCanvas" ></svg>
+                <div id="treeLabelsDiv" class="col-sm-5 form-control pieLabelRegion" overflow ="scroll" style="float: right; visibility: hidden;" >
+                    <svg id="treeLabels" class="legend"></svg>
+                    <button type="button" class="btn btn-sm btn-outline-dark" onclick="removeNodePieCharts()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16">
+                    <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+                    </svg>
+                    </button>
+                </div>
+            </div>
             
             <button id="pauseButton" type="button" class="btn btn-sm btn-outline-dark"  onclick="pauseSimulation()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pause" viewBox="0 0 16 16">
@@ -58,7 +68,7 @@
             
             </div>
             
-            <div id="profilePieLabelsDiv" class="col-sm-5 form-control pieLabelRegion" overflow ="scroll">
+            <div id="profilePieLabelsDiv" class="col-sm-5 form-control pieLabelRegion " overflow ="scroll" >
                 <svg  id="profilePieLabels" class="legend" ></svg>     
             </div>
             
@@ -93,7 +103,7 @@
                     </button>
                 </div>
             </div>
-            <div id="auxPieLabelsDiv" class="col-sm-5 form-control pieLabelRegion" >
+            <div id="auxPieLabelsDiv" class="col-sm-5 form-control pieLabelRegion">
                 <svg id="auxPieLabels" class="legend" ></svg>
                 
             </div>
@@ -121,7 +131,6 @@
         font: sans-serif;
         pointer-events: none;
         text-anchor:middle;
-
     }
 
     .link line {

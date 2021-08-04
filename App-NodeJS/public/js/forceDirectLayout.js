@@ -1,5 +1,6 @@
 window.onload = setup 
 
+const home_tab = document.getElementById('home-tab')
 const switchNodeLabels = document.getElementById('NodeLabelsSwitch')
 const rangeNodeLabelSize = document.getElementById('NodeLabelsRange')
 
@@ -312,12 +313,33 @@ function checkerLinks(checked) {
     jsonData.linkLabels = checked;
     checked ? showLabels(linklabels) : hideLabels(linklabels)
 }
-  
+/*  
+function showLabels(className) {
+    var labels = document.getElementsByClassName(className)
+    for (i = 0; i < labels.length; i++) {
+        var prElm  = labels[i].parentElement;
+        
+        var visibility = prElm.style.visibility
+
+        if(visibility!='hidden')
+            labels[i].style.visibility='visible';
+    }
+}
+
+function hideLabels(className) {
+    var labels = document.getElementsByClassName(className)
+    
+    for (i = 0; i < labels.length; i++) {
+        labels[i].style.visibility='hidden';
+    }
+}
+
+ */ 
 function showLabels(className) {
     var labels = document.getElementsByClassName(className)
     for (i = 0; i < labels.length; i++) {
         if(!labels[i].isCollapsed)
-            labels[i].setAttribute("visibility","visible");
+            labels[i].style.visibility = "visible";
     }
 }
 
@@ -325,7 +347,7 @@ function hideLabels(className) {
     var labels = document.getElementsByClassName(className)
     for (i = 0; i < labels.length; i++) {
         if(!labels[i].isCollapsed)
-            labels[i].setAttribute("visibility","hidden");
+            labels[i].style.visibility = "hidden";
     }
 }
 
@@ -425,6 +447,87 @@ function resetForces(){
 }
  
 /////// GRAPHIC MOVEMENT ////////
+
+function click(event, node){
+    console.log("NODE CLICKED")
+    if(node.isNodeLeaf) return;
+    var changeColor = document.getElementById(node.key)
+    
+    var isCollapsing = node.isCollapsed ? false : true;
+    node.isCollapsed = isCollapsing;
+    
+    
+    recurse(node.key)
+    
+
+    function recurse(key){
+        links.forEach(n => {
+            var source = n.source;
+            var target = n.target;
+            if(source.key == key){
+           
+                //GET NEXT NODE ELEMENT
+                var nd = document.getElementById(target.key+"_node");
+                var elements = nd.children
+                
+                //CHANGE VISIBILITY TO NODE AND TEXT
+                for(let i = 0; i<elements.length ; ++i){
+                    elements[i].isCollapsed = isCollapsing;
+                    changeVisibility(elements[i])
+                }
+
+                //CAHNGE VISIBILITY TO LINK
+                var lk = document.getElementById(source.key+'-'+target.key);
+                var linkElements = lk.children
+
+                for(let i = 0; i<linkElements.length ; ++i){
+                    linkElements[i].isCollapsed = isCollapsing;
+                    changeVisibility(linkElements[i])
+                }
+
+                //check if next node is already collapsed
+                if(isCollapsing && !target.isCollapsed){
+                    recurse(target.key)
+                } else if (!isCollapsing && !target.isCollapsed){
+                    recurse(target.key)
+                }
+            }
+        })
+    
+    }
+
+    function changeVisibility(element){
+        var visibility = element.style.visibility
+        var type = element.className.baseVal 
+
+        if (visibility==null || visibility=='visible' || visibility =='' || visibility == undefined){ 
+            element.style.visibility = "hidden"
+            //element.isVisible = 'hidden'
+        }else if((type==nodelabels && !switchNodeLabels.checked) || (type==linklabels && !switchLinkLabels.checked)){
+            element.style.visibility="hidden"
+            //element.isVisible = 'hidden'
+        }
+        else{ 
+            element.style.visibility="visible"
+            //element.isVisible = 'visible'
+        }
+        
+    }
+ 
+    if(isCollapsing){ 
+        node.previousColor = changeColor.style.fill;
+        changeColor.style.fill = color(node)
+    }else{
+        changeColor.style.fill = node.previousColor
+        node.previousColor = null;
+    }
+    
+    
+    
+    
+}
+
+/*
 function click(event, node){
     console.log("NODE CLICKED")
     if(node.isNodeLeaf) return;
@@ -477,12 +580,17 @@ function click(event, node){
         var visibility = element.getAttribute('visibility')
         var type = element.className.baseVal 
 
-        if (visibility==null || visibility=='visible')
+        if (visibility==null || visibility=='visible'){ 
             element.setAttribute("visibility","hidden")
-        else if((type==nodelabels && !switchNodeLabels.checked) || (type==linklabels && !switchLinkLabels.checked))
-                element.setAttribute("visibility","hidden")
-        else
-                element.setAttribute("visibility","visible")
+            element.isVisible = 'hidden'
+        }else if((type==nodelabels && !switchNodeLabels.checked) || (type==linklabels && !switchLinkLabels.checked)){
+            element.setAttribute("visibility","hidden")
+            element.isVisible = 'hidden'
+        }
+        else{ 
+            element.setAttribute("visibility","visible")
+            element.isVisible = 'visible'
+        }
         
     }
  
@@ -498,7 +606,7 @@ function click(event, node){
     
     
 }
-
+*/
 function ticked() {
     try {
         link
@@ -689,6 +797,8 @@ function changeColorByProfile(e,k){
             return;
     }
 
+    removeNodePieCharts()
+
     var index = schemeGenes.indexOf(key);
 
     subsetProfiles.forEach(x =>{
@@ -729,6 +839,7 @@ function changeColorByIsolate(e,k){
             .style("fill",d => color(d));
         return;
     }
+    removeNodePieCharts();
     var index = metadata.indexOf(key);
 
     isolateData.forEach(x =>{
@@ -1099,8 +1210,16 @@ function numPages()
 
 //////////////////////// PIE CHARTS //////////////////////////////
 const pieLabelRegion = 'pieLabelRegion'
+const profilePieLabels ='#profilePieLabels'
+const profilePieChartSVG = '#profilePieChartSVG'
+const profilePieChartTitle = 'profilePieChartTitle'
+const auxPieLabels = '#auxPieLabels'
+const auxPieChartSVG = '#auxPieChartSVG'
+const auxPieChartTitle = 'auxPieChartTitle'
+
 const profilePieChartDiv = document.getElementById('profilePieChartDiv')
 const auxPieChartDiv = document.getElementById('auxPieChartDiv')
+const treeLabelsDiv = document.getElementById('treeLabelsDiv')
 let pieCharProfiletKeys = [];
 let pieChartAuxKeys = [];
 let colors;
@@ -1117,7 +1236,7 @@ function newPieChart(event){
         pieCharProfiletKeys.push(header);
         buildPieChartProfileData(pieCharProfiletKeys)
             .then(elements => {
-                buildPieChart(pieCharProfiletKeys, elements,'#profilePieChartSVG','#profilePieLabels','profilePieChartTitle');
+                buildPieChart(pieCharProfiletKeys, elements,profilePieChartSVG,profilePieLabels,profilePieChartTitle);
             })  
             .catch(message =>{alert(message)})
     } else {
@@ -1127,7 +1246,7 @@ function newPieChart(event){
         pieChartAuxKeys.push(header);
         buildPieChartAuxData(pieChartAuxKeys)
             .then(elements => {
-                buildPieChart(pieChartAuxKeys, elements,'#auxPieChartSVG','#auxPieLabels','auxPieChartTitle');
+                buildPieChart(pieChartAuxKeys, elements,auxPieChartSVG,auxPieLabels,auxPieChartTitle);
             })
             .catch(message =>{alert(message)})
         
@@ -1192,7 +1311,7 @@ function buildPieChart(names,data,id,legendID,titleID){
             var divid = document.getElementById(titleID)    
             lbl =  divid.innerHTML;
             
-            let percentage = (i.endAngle - i.startAngle)/(2*Math.PI)*100
+            let percentage =  Math.round((i.endAngle - i.startAngle)/(2*Math.PI)*100*100)/100
             divid.innerHTML += `<br><i class="bi bi-archive-fill">${i.data[0]} Count: ${i.data[1]} - ${percentage}%</i>`
             })
        .on('mouseout', function (d, i) {
@@ -1399,14 +1518,35 @@ function linkToTree(event){
 }
 
 function buildNodePies(data){
+    var collapsedNodes = [];
+
+    node.selectAll("circle")
+            .style("fill",color);
+    
     node.each(function (d) {
+        
+        /*if (d.isCollapsed){
+            click(null,d)
+            collapsedNodes.push(d);
+        } */  
         drawNodePie(d3.select(this), data[d.key] ,d.pieChart)
     });
+
+    //collapsedNodes.forEach(d=>click(null,d))
+    
+
+    home_tab.click()
+    treeLabelsDiv.style.visibility = 'visible'
+    buildPieChartLabels(colors,'#treeLabels')
+
 }
 
 function drawNodePie(nodeElement, data) {    
     if (!data) return;
-    drawPieChart(nodeElement, data);
+    var elements = nodeElement._groups[0][0].children
+
+    if(!elements[0].isCollapsed)
+        drawPieChart(nodeElement, data);
 }
 
 function drawPieChart(nodeElement, data) {
@@ -1423,7 +1563,6 @@ function drawPieChart(nodeElement, data) {
         .data(pie(obj))
         .enter()
         
-
     var path = d3.arc()
         .innerRadius(0)
         .outerRadius(radius)
@@ -1431,6 +1570,12 @@ function drawPieChart(nodeElement, data) {
     arc.append("path")
         .attr("d", path)
         .attr("fill", d => colors[d.data[0]])
+
+    
+    //node.selectAll('path').attr("style","z-index: 1;")
+    //node.selectAll('text').attr("style","z-index: 2;")
+
+    
 }
 
 
@@ -1442,6 +1587,12 @@ function cleanProfileKeys(event){
 function cleanAuxKeys(event){
     auxPieChartDiv.style.visibility = 'hidden'
     pieChartAuxKeys = [];
+}
+
+function removeNodePieCharts(){
+    node.selectAll('path').remove()
+    treeLabelsDiv.style.visibility = 'hidden'
+
 }
 
 /**
