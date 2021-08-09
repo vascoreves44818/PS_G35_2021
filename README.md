@@ -21,10 +21,10 @@ The application is a modular soluction build using Javascript, Handlebars, HTML 
 - Statistics;
 - Save and load state;
 
-## DOCUMENTATION
+## DOCUMENTATION 
 The project was developed as a Node.js application, developed in modules then exported to [Electron](https://www.electronjs.org/).
 
-The main module is the visualization module, where the [**Force Direct Layout file**]() is the file responsible of building the visualization and all the features involved.
+The visualization module is the main module of the application, where the [**Force Direct Layout file**]() is the file responsible of building the visualization and all the features involved.
 
 ### Data type
 This module receives the information in JSON format with all the information, either from saved datasets or new datasets. The JSON object received must contain the ```links``` and ```nodes``` field.
@@ -42,6 +42,43 @@ Each **link** object contains the following properties:
 ![image](https://user-images.githubusercontent.com/47890762/128734041-c14e3b8e-150c-4aed-b3c0-900ddef3ccf1.png)
 
 ```Source``` and ```Target``` represent the keys of the nodes the link is connecting, and also the ```value``` property for each link.
+
+### Start Force Direct Layout
+
+#### 1. setup 
+ 
+``` setup() ```
+
+This method starts the visualization. It starts by reading the JSON data given and calling the following methods to start the layout.
+
+#### 2. init 
+
+ ``` init() ```
+ 
+ This method initializes the svg and it's zoom and viewbox attributes, as well as the html ``` <g> ``` element to draw the tree.
+ 
+#### 3. start
+
+```start()```
+
+The start method starts to draw the tree, by drawing all the html elements, links, nodes, labels, colors, etc.
+
+For the nodes, with the D3.js ```on(type[, listener[, capture]])``` method it will add the event listeners:
+
+For moving the nodes, calling the functions:
+- **dragstarted**
+- **dragged**
+- **dragended**
+
+For collapsing the nodes on *click* calling the functions:
+- **clicked**
+
+It also checks if the information given, is from a saved dataset, if so, sets the graphic filters to the saved info.
+
+#### 4. startSimulation
+
+This method uses the [D3.js force library](https://github.com/d3/d3-force) to start the simulation.
+
 
 
 
