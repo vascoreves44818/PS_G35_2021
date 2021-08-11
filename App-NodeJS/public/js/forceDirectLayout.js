@@ -85,6 +85,39 @@ function setVisibleControls(){
     graphicControls.style.visibility = 'visible'
 }
 
+function setGraphicFilters(){
+    if(schemeGenes){
+        var colorOption = document.createElement('option')
+        colorOption.value = 'profile'
+        colorOption.innerHTML = 'Profile'
+        nodeSizeKey.append(colorOption)
+        
+        schemeGenes.forEach( x => {
+            var opt = document.createElement('option');
+            opt.value = x;
+            opt.innerHTML = x;
+            profileColorFilter
+                .append(opt);
+        })
+    }
+        
+    if(metadata){
+        var colorOption = document.createElement('option')
+        colorOption.value = 'isolates'
+        colorOption.innerHTML = 'Isolate'
+        nodeSizeKey.append(colorOption)
+
+        metadata.forEach( x => {
+            var opt = document.createElement('option');
+            opt.value = x;
+            opt.innerHTML = x;
+            isolateColorFilter
+                .append(opt);
+        })
+    }
+    
+}
+
 function setEventListenners(){
     switchNodeLabels.addEventListener('change', function () {
         checker(this.checked)
@@ -299,12 +332,6 @@ function startSimulation(){
     
 }
 
-function resizeView(){
-    let fullsize = $('.gSvg').getBoundingClientRect();
-    //const fullSize = document.getElementsByClassName('.gSvg')[0].getBoundingClientRect();
-    svg.attr("viewBox", [fullsize.x, fullsize.y, fullsize.width, height]);
-}
-
 ///// GRAPHIC LABELS //////
 function checker(checked) {
     jsonData.nodeLabels = checked;
@@ -319,7 +346,7 @@ function checkerLinks(checked) {
 function showLabels(className) {
     var labels = document.getElementsByClassName(className)
     for (i = 0; i < labels.length; i++) {
-        if(!labels[i].isCollapsed)
+        if(!labels[i].isCollapsed && !(labels[i].innerHTML.includes('UNKNOWN')))
             labels[i].style.visibility = "visible";
     }
 }
@@ -366,16 +393,6 @@ function changeLinkSize(){
 
 }
 
-function color(node,value){
-    if(node.isCollapsed)
-        return colorCollapse;
-    if(value){
-        var x = value(node);
-        if(x) return x;
-    } 
-    return node.isNodeLeaf ? colorLeafNodes : colorExpand;
-}
-
 function nodeSize(d){
     var expr1 = defaultNodeSize;
     var sclFctr = (jsonData.nodeScaleFactor ? jsonData.nodeScaleFactor : defaultNodeScaleFactor);
@@ -405,10 +422,107 @@ function linkSize(l){
 }
 
 
+function color(node,value){
+    if(node.isCollapsed)
+        return colorCollapse;
+    if(value){
+        var x = value(node);
+        if(x) return x;
+    } 
+    return node.isNodeLeaf ? colorLeafNodes : colorExpand;
+}
+
+function changeColorByProfile(e,k){
+    var colorScheme = {}
+    var key = k ? k : profileColorFilter.value;
+    jsonData.colorKey = {profile : key}
+
+    if(!key || key.includes('UNKNOWN')){
+        node.selectAll("circle")
+            .style("fill",color);
+            return;
+    }
+
+    removeNodePieCharts()
+
+    var index = schemeGenes.indexOf(key);
+
+    subsetProfiles.forEach(x =>{
+        if(x.profile[index]){
+            var data = x.profile[index];
+            colorScheme[data] = colorScheme[data] ? colorScheme[data]+1 : 1;
+        }
+    })
+
+    var keys = Object.keys(colorScheme);
+    
+    let myScale = d3.scaleSequential(d3.interpolateRainbow)
+        .domain([0,keys.length])
+
+    var value = function(d){ 
+        try{
+            if(d.profile[index]){  
+                var clr = myScale(keys.indexOf(d.profile[index]))
+                return clr;  
+            }
+            return null;
+        }catch(x){
+            console.log(x)
+        }
+    } 
+
+    node.selectAll("circle")
+        .style("fill",x => color(x,value));
+    
+}
+
+function changeColorByIsolate(e,k){
+    var colorScheme = {}
+    var key = k ? k : isolateColorFilter.value;
+    jsonData.colorKey = {isolate : key}
+    if(!key || key.includes('UNKNOWN')){
+        node.selectAll("circle")
+            .style("fill",d => color(d));
+        return;
+    }
+    removeNodePieCharts();
+    var index = metadata.indexOf(key);
+
+    isolateData.forEach(x =>{
+        if(x.isolate[index]){
+            var data = x.isolate[index];
+            colorScheme[data] = colorScheme[data] ? colorScheme[data]+1 : 1;
+        }
+    })
+    
+    var keys = Object.keys(colorScheme);
+
+    let myScale = d3.scaleSequential(d3.interpolateRainbow)
+        .domain([0,keys.length])
+
+    var value = function(d){ 
+        try{ 
+            if(d.isolates){
+                var clr = myScale(keys.indexOf(d.isolates[index]))
+                //console.log(clr +'-' + d.isolates[index])
+                return clr;
+            } 
+            return null;
+        }catch(x){
+            console.log(x);
+        }
+    }
+
+    node.selectAll("circle")
+        .style("fill",x => color(x,value));
+
+}
+
+
 ///// GRAPHIC FORCES ////////
 function changeChargeForce(){
     jsonData.strength = chargeForceRange.value
-    
+
     simulation.force("charge", d3.forceManyBody().strength(jsonData.strength))
 }
 
@@ -690,8 +804,8 @@ function pinNodes(){
 function save(){
     console.log('SAVING')
     try {
-        var gPosition = document.getElementById('gSvg').getAttribute("transform")
-        jsonData.graphPosition = gPosition;
+        /*var gPosition = document.getElementById('gSvg').getAttribute("transform")
+        jsonData.graphPosition = gPosition;*/
         jsonData.isSaved = true
         
         var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(jsonData));
@@ -730,126 +844,6 @@ function searchGraphByNode(){
 
 }
 
-//////// DATA FILTERS /////////
-
-function setGraphicFilters(){
-    if(schemeGenes){
-        var colorOption = document.createElement('option')
-        colorOption.value = 'profile'
-        colorOption.innerHTML = 'Profile'
-        nodeSizeKey.append(colorOption)
-        
-        schemeGenes.forEach( x => {
-            var opt = document.createElement('option');
-            opt.value = x;
-            opt.innerHTML = x;
-            profileColorFilter
-                .append(opt);
-        })
-    }
-        
-    if(metadata){
-        var colorOption = document.createElement('option')
-        colorOption.value = 'isolates'
-        colorOption.innerHTML = 'Isolate'
-        nodeSizeKey.append(colorOption)
-
-        metadata.forEach( x => {
-            var opt = document.createElement('option');
-            opt.value = x;
-            opt.innerHTML = x;
-            isolateColorFilter
-                .append(opt);
-        })
-    }
-    
-}
-
-function changeColorByProfile(e,k){
-    var colorScheme = {}
-    var key = k ? k : profileColorFilter.value;
-    jsonData.colorKey = {profile : key}
-
-    if(!key || key.includes('UNKNOWN')){
-        node.selectAll("circle")
-            .style("fill",color);
-            return;
-    }
-
-    removeNodePieCharts()
-
-    var index = schemeGenes.indexOf(key);
-
-    subsetProfiles.forEach(x =>{
-        if(x.profile[index]){
-            var data = x.profile[index];
-            colorScheme[data] = colorScheme[data] ? colorScheme[data]+1 : 1;
-        }
-    })
-
-    var keys = Object.keys(colorScheme);
-    
-    let myScale = d3.scaleSequential(d3.interpolateRainbow)
-        .domain([0,keys.length])
-
-    var value = function(d){ 
-        try{
-            if(d.profile[index]){  
-                var clr = myScale(keys.indexOf(d.profile[index]))
-                return clr;  
-            }
-            return null;
-        }catch(x){
-            console.log(x)
-        }
-    } 
-
-    node.selectAll("circle")
-        .style("fill",x => color(x,value));
-    
-}
-
-function changeColorByIsolate(e,k){
-    var colorScheme = {}
-    var key = k ? k : isolateColorFilter.value;
-    jsonData.colorKey = {isolate : key}
-    if(!key || key.includes('UNKNOWN')){
-        node.selectAll("circle")
-            .style("fill",d => color(d));
-        return;
-    }
-    removeNodePieCharts();
-    var index = metadata.indexOf(key);
-
-    isolateData.forEach(x =>{
-        if(x.isolate[index]){
-            var data = x.isolate[index];
-            colorScheme[data] = colorScheme[data] ? colorScheme[data]+1 : 1;
-        }
-    })
-    
-    var keys = Object.keys(colorScheme);
-
-    let myScale = d3.scaleSequential(d3.interpolateRainbow)
-        .domain([0,keys.length])
-
-    var value = function(d){ 
-        try{ 
-            if(d.isolates){
-                var clr = myScale(keys.indexOf(d.isolates[index]))
-                //console.log(clr +'-' + d.isolates[index])
-                return clr;
-            } 
-            return null;
-        }catch(x){
-            console.log(x);
-        }
-    }
-
-    node.selectAll("circle")
-        .style("fill",x => color(x,value));
-
-}
 ///////////////////// TABLES ////////////////////////////////
 
 var current_page_profile = 1;
