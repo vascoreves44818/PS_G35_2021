@@ -598,7 +598,7 @@ function click(event, node){
 
         if (visibility==null || visibility=='visible' || visibility =='' || visibility == undefined){ 
             element.style.visibility = "hidden"
-        }else if((type==nodelabels && !switchNodeLabels.checked) || (type==linklabels && !switchLinkLabels.checked)){
+        }else if((type==nodelabels && !switchNodeLabels.checked) || (type==linklabels && !switchLinkLabels.checked) || element.innerHTML.includes('UNKNOWN')){
             element.style.visibility="hidden"
         }
         else{ 
@@ -804,8 +804,6 @@ function pinNodes(){
 function save(){
     console.log('SAVING')
     try {
-        /*var gPosition = document.getElementById('gSvg').getAttribute("transform")
-        jsonData.graphPosition = gPosition;*/
         jsonData.isSaved = true
         
         var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(jsonData));
