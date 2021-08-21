@@ -62,8 +62,8 @@ function setup(){
         subsetProfiles =  jsonData.subsetProfiles;
         isolateData = jsonData.isolatesData;
     } catch(x){
-        console.log(x);
-        alert('Problem reading information. Insert again.');
+        alert(x.message);
+        //alert('Problem reading information. Insert again.');
         return;
     }
    
@@ -1441,7 +1441,7 @@ function buildJsonNumberOfOccurencesByIsolate(){
         try{
             if(pieChartAuxKeys.length == 1){
                 var key = pieChartAuxKeys[0]
-                var idIndex = 0;
+                var idIndex = metadata.indexOf(jsonData.data_type[0]);
                 var infoIndex = metadata.indexOf(key);
 
 
@@ -1459,7 +1459,7 @@ function buildJsonNumberOfOccurencesByIsolate(){
             else{
                 var key1 = pieChartAuxKeys[0]
                 var key2 = pieChartAuxKeys[1]
-                var idIndex = 0;
+                var idIndex = metadata.indexOf(jsonData.data_type[0]);;
                 var infoIndex1 = metadata.indexOf(key1);
                 var infoIndex2 = metadata.indexOf(key2)
 
