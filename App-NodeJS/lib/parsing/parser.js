@@ -124,21 +124,6 @@ function parse(json,datasetname,tableElements){
     
 }
 
-
-function readProfile(profileData){    
-    return new Promise((resolve, reject) => {
-        let tableElements = profileData.split('\r\n')        
-        resolve(tableElements)
-    });
-}
-
-function readAuxiliar(auxData){    
-    return new Promise((resolve, reject) => {
-        let tableElements = auxData.split('\r\n')
-        resolve(tableElements)
-    });
-}
-
 function parseTables(data){
     return data.includes('\r\n') ? splitByline(data) : splitByTab(data);
 

@@ -28,6 +28,8 @@ const searchGraph = document.getElementById('searchGraph');
 
 const linkToTreeBtn = document.getElementById('linkToTreeBtn');
 
+const btn_save_state = document.getElementById('btn_save_state')
+
 const height = window.innerHeight*6;
 const width = window.innerWidth*6;
 const defaultcollideForce = 1;
@@ -144,6 +146,8 @@ function setEventListenners(){
     linkSizeRange.addEventListener("input",changeLinkSize)
 
     linkToTreeBtn.addEventListener("click",linkToTree)
+
+    btn_save_state.addEventListener("click",save)
 
     
 }
@@ -620,86 +624,6 @@ function click(event, node){
     
 }
 
-/*
-function click(event, node){
-    console.log("NODE CLICKED")
-    if(node.isNodeLeaf) return;
-    var changeColor = document.getElementById(node.key)
-    
-    var isCollapsing = node.isCollapsed ? false : true;
-    node.isCollapsed = isCollapsing;
-    
-    
-    recurse(node.key)
-    
-
-    function recurse(key){
-        links.forEach(n => {
-            var source = n.source;
-            var target = n.target;
-            if(source.key == key){
-           
-                //GET NEXT NODE ELEMENT
-                var nd = document.getElementById(target.key+"_node");
-                var elements = nd.children
-                
-                //CHANGE VISIBILITY TO NODE AND TEXT
-                for(let i = 0; i<elements.length ; ++i){
-                    elements[i].isCollapsed = isCollapsing;
-                    changeVisibility(elements[i])
-                }
-
-                //CAHNGE VISIBILITY TO LINK
-                var lk = document.getElementById(source.key+'-'+target.key);
-                var linkElements = lk.children
-
-                for(let i = 0; i<linkElements.length ; ++i){
-                    linkElements[i].isCollapsed = isCollapsing;
-                    changeVisibility(linkElements[i])
-                }
-
-                //check if next node is already collapsed
-                if(isCollapsing && !target.isCollapsed){
-                    recurse(target.key)
-                } else if (!isCollapsing && !target.isCollapsed){
-                    recurse(target.key)
-                }
-            }
-        })
-    
-    }
-
-    function changeVisibility(element){
-        var visibility = element.getAttribute('visibility')
-        var type = element.className.baseVal 
-
-        if (visibility==null || visibility=='visible'){ 
-            element.setAttribute("visibility","hidden")
-            element.isVisible = 'hidden'
-        }else if((type==nodelabels && !switchNodeLabels.checked) || (type==linklabels && !switchLinkLabels.checked)){
-            element.setAttribute("visibility","hidden")
-            element.isVisible = 'hidden'
-        }
-        else{ 
-            element.setAttribute("visibility","visible")
-            element.isVisible = 'visible'
-        }
-        
-    }
- 
-    if(isCollapsing){ 
-        node.previousColor = changeColor.style.fill;
-        changeColor.style.fill = color(node)
-    }else{
-        changeColor.style.fill = node.previousColor
-        node.previousColor = null;
-    }
-    
-    
-    
-    
-}
-*/
 function ticked() {
     try {
         link
@@ -761,9 +685,13 @@ function dragended(d) {
 
 /////// GRAPHIC BUTTONS ///////////////
 function restartSimulation(){
-    /*simulation.stop();
+    jsonData.links = restartLinkList();
+    jsonData.nodes = restartNodeList();
+    links = jsonData.links;
+    nodes = jsonData.nodes;
+    simulation.stop();
     g.selectAll("*").remove();
-    start();*/
+    init();
 }
 
 function pauseSimulation(){
@@ -797,14 +725,33 @@ function pauseSimulation(){
     
 }
 
-function pinNodes(){
-        
+function restartLinkList(){
+    var lks =[];
+    var toRet = jsonData.links;
+    toRet.forEach(element => {
+        var x = {}
+        x.source = element.source.key;
+        x.target = element.target.key;
+        x.value = element.value;
+        x.distance = element.distance;
+        lks.push(x);
+    });
+    return lks;
+}
+
+function restartNodeList(){
+    nodes.map(element => {
+        if(element.isCollapsed) element.isCollapsed = false;
+    })
+    return nodes;
+    
 }
 
 function save(){
     console.log('SAVING')
     try {
         jsonData.isSaved = true
+        jsonData.links = getLinkListToSave();
         
         var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(jsonData));
         var dlElem = document.getElementById('downloadElem');
@@ -831,15 +778,7 @@ function searchGraphByNode(){
         var scale = 5;
         zoom.translateTo(g,nd.x,nd.y)
         zoom.scaleTo(g,scale)
-        /*var translateX = width / 2 - scale * nd.x;
-        var translateY =  height / 2 - scale * nd.y;
-        g.attr("transform", "translate(" + translateX + "," + translateY + ") scale(" + scale + ")");*/
-        
-
     }
-    
-
-
 }
 
 ///////////////////// TABLES ////////////////////////////////
