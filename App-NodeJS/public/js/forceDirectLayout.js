@@ -442,6 +442,7 @@ function changeColorByProfile(e,k){
     jsonData.colorKey = {profile : key}
 
     if(!key || key.includes('UNKNOWN')){
+        jsonData.colorKey = {}
         node.selectAll("circle")
             .style("fill",color);
             return;
@@ -485,6 +486,7 @@ function changeColorByIsolate(e,k){
     var key = k ? k : isolateColorFilter.value;
     jsonData.colorKey = {isolate : key}
     if(!key || key.includes('UNKNOWN')){
+        jsonData.colorKey = {}
         node.selectAll("circle")
             .style("fill",d => color(d));
         return;
@@ -685,12 +687,18 @@ function dragended(d) {
 
 /////// GRAPHIC BUTTONS ///////////////
 function restartSimulation(){
-    jsonData.links = restartLinkList();
+    jsonData.links = restartLinkList(); 
+    links = jsonData.links
     jsonData.nodes = restartNodeList();
-    links = jsonData.links;
-    nodes = jsonData.nodes;
+    nodes = jsonData.nodes
+    jsonData.colorKey = {}
+    removeNodePieCharts()
+    //jsonData.isSaved = false;
+
+    
     simulation.stop();
-    g.selectAll("*").remove();
+    svg.selectAll("*").remove();
+        
     init();
 }
 
@@ -730,11 +738,16 @@ function restartLinkList(){
     var toRet = jsonData.links;
     toRet.forEach(element => {
         var x = {}
-        x.source = element.source.key;
-        x.target = element.target.key;
-        x.value = element.value;
-        x.distance = element.distance;
-        lks.push(x);
+        try{
+            x.source = element.source.key;
+            x.target = element.target.key;
+            x.value = element.value;
+            x.distance = element.distance;
+            lks.push(x);
+        } catch(x){
+            console.log(x)
+        }
+        
     });
     return lks;
 }
@@ -751,7 +764,7 @@ function save(){
     console.log('SAVING')
     try {
         jsonData.isSaved = true
-        jsonData.links = getLinkListToSave();
+        jsonData.links = restartLinkList();
         
         var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(jsonData));
         var dlElem = document.getElementById('downloadElem');
@@ -1141,10 +1154,13 @@ function newPieChart(event){
     var divTabel = document.getElementById('profileTablePanel')
     if(path.includes(divTabel)){
         profilePieChartDiv.style.visibility = 'visible'
-        if(pieCharProfiletKeys.length == 2 )
-            pieCharProfiletKeys = [];   
-        else if(pieCharProfiletKeys[0] == header) return; 
-        pieCharProfiletKeys.push(header);
+        let index = pieCharProfiletKeys.indexOf(header);
+        if(index>-1){
+                pieCharProfiletKeys.splice(index, 1);
+                if(!pieCharProfiletKeys.length) return cleanProfileKeys();
+        } else {
+            pieCharProfiletKeys.push(header);
+        }
         buildPieChartProfileData(pieCharProfiletKeys)
             .then(elements => {
                 buildPieChart(pieCharProfiletKeys, elements,profilePieChartSVG,profilePieLabels,profilePieChartTitle);
@@ -1152,11 +1168,14 @@ function newPieChart(event){
             .catch(message =>{alert(message)})
     } else {
         auxPieChartDiv.style.visibility = 'visible'
-        if(pieChartAuxKeys.length == 2)
-            pieChartAuxKeys = []
-        else if(pieChartAuxKeys[0] == header) return;
+        let index = pieChartAuxKeys.indexOf(header);
 
-        pieChartAuxKeys.push(header);
+        if (index > -1) {
+            pieChartAuxKeys.splice(index, 1);
+            if(!pieChartAuxKeys.length) return cleanAuxKeys();
+        } else {
+            pieChartAuxKeys.push(header);
+        }
         buildPieChartAuxData(pieChartAuxKeys)
             .then(elements => {
                 buildPieChart(pieChartAuxKeys, elements,auxPieChartSVG,auxPieLabels,auxPieChartTitle);
@@ -1286,11 +1305,20 @@ function buildPieChartLabels(colors,legendID){
 function buildPieChartTitle(name,size,titleID){
     
     var divid = document.getElementById(titleID)
-    if(name.length==1){
-        divid.innerHTML =  `<h5><b>${name[0]}</b></h5><b>Total Categories: </b>${size}`
-    } else {
-        divid.innerHTML =  `<h5><b>${name[0]} & ${name[1]}</b></h5><b>Total Categories: </b>${size}`
-    }
+    
+    divid.innerHTML = `<h5>`
+    for(let i = 0; i< name.length; ++i){
+        if (i == 0){
+            divid.innerHTML += `<b>${name[i]}</b>`
+        } else {
+            divid.innerHTML += ` & <b>${name[i]}</b>`
+        }
+        
+        if(i == name.length-1){
+            divid.innerHTML += `</h5><hr><b>Total Categories: </b>${size}`
+        } 
+    }        
+    
     
     divid.style.textAlign = 'center'
     
@@ -1431,21 +1459,13 @@ function linkToTree(event){
 }
 
 function buildNodePies(data){
-    var collapsedNodes = [];
-
     node.selectAll("circle")
             .style("fill",color);
     
     node.each(function (d) {
-        
-        /*if (d.isCollapsed){
-            click(null,d)
-            collapsedNodes.push(d);
-        } */  
         drawNodePie(d3.select(this), data[d.key] ,d.pieChart)
     });
 
-    //collapsedNodes.forEach(d=>click(null,d))
     
 
     home_tab.click()
@@ -1483,10 +1503,6 @@ function drawPieChart(nodeElement, data) {
     arc.append("path")
         .attr("d", path)
         .attr("fill", d => colors[d.data[0]])
-
-    
-    //node.selectAll('path').attr("style","z-index: 1;")
-    //node.selectAll('text').attr("style","z-index: 2;")
 
     
 }
