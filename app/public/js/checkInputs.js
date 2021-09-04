@@ -16,7 +16,7 @@ function setup(){
 function logSubmit(event){
   event.preventDefault();
   form = document.getElementById('formInputFile')
-  const loc = "http://localhost:8080/phyloviz/insertFiles"
+  const loc = "http://localhost:8080/insertFiles"
 
   let doc1 = document.getElementById('inputFile');
   let doc2 = document.getElementById('inputFile2');
@@ -83,7 +83,7 @@ function logSubmit(event){
 function logSubmitDB(event){
   event.preventDefault();
   formDatabaseFile = document.getElementById('formDatabaseFile')
-  const loc = "http://localhost:8080/phyloviz/insertDatabasefiles"
+  const loc = "http://localhost:8080/insertDatabasefiles"
   let db_file = document.getElementById('inputJsonFile')
 
   let dbFile = db_file.files;

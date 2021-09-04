@@ -10,7 +10,7 @@ function createWindow(){
         }
     })
     mainWindow.maximize()
-    mainWindow.loadURL('http://localhost:8080/phyloviz/home')
+    mainWindow.loadURL('http://localhost:8080/home')
     mainWindow.on('closed', function () {
         mainWindow = null
     })

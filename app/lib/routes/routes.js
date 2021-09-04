@@ -13,14 +13,14 @@ var fileInfo;
 module.exports = router
 
 router.get('/', firstPage);
-router.get('/phyloviz/home', home)
-router.get('/phyloviz/visualization', visualizationFromTree)
-router.get('/phyloviz/visualization/file', visualizationFromFile)
-router.post('/phyloviz/insertFiles', readFiles)
-router.post('/phyloviz/insertDatabasefiles',readDatabaseFiles)
+router.get('/home', home)
+router.get('/visualization', visualizationFromTree)
+router.get('/visualization/file', visualizationFromFile)
+router.post('/insertFiles', readFiles)
+router.post('/insertDatabasefiles',readDatabaseFiles)
 
 function firstPage(req, res, next) {
-    res.redirect('/phyloviz/home');
+    res.redirect('/home');
   }
 
 function home(req, res, next) {

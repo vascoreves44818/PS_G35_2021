@@ -2,6 +2,8 @@
   "name": "app",
   "version": "1.0.0",
   "main": "index.js",
+  "author": "Vasco Reves",
+  "description": "",
   "scripts": {
     "start": "electron main.js"
   },
