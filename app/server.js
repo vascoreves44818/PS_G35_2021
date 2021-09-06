@@ -50,7 +50,7 @@ function init(done) {
             console.log(err)
         })
         server = app.listen(8080, () => {
-            console.log('Listening for HTTP requests on port 8000')
+            console.log('Listening for HTTP requests on port 8080')
             if (done) done()
         })
 }

@@ -1,9 +1,9 @@
 {
-  "name": "app",
+  "name": "force-direct-visualization",
   "version": "1.0.0",
   "main": "index.js",
   "author": "Vasco Reves",
-  "description": "",
+  "description": "Force Direct visualization for phylogenetic trees.",
   "scripts": {
     "start": "electron main.js"
   },
