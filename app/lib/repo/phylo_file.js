@@ -55,17 +55,21 @@ function createTables(profile,auxiliary){
     return new Promise((resolve,reject) => {
         let array = [];
         let pd,ad;
-       
-        if(profile){
-            pd = parser.parseTables(profile);
-            array.push(pd)
-        }
-            
-        if(auxiliary){
-            ad = parser.parseTables(auxiliary)
-            array.push(ad)
-        }
-        resolve(array);  
+       try{
+            if(profile){
+                pd = parser.parseTables(profile);
+                array.push(pd)
+            }
+                
+            if(auxiliary){
+                ad = parser.parseTables(auxiliary)
+                array.push(ad)
+            }
+            resolve(array);  
+       } catch(x){
+           reject(x)
+       }
+        
     })
     
 }

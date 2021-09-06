@@ -29,6 +29,7 @@
     "hbs": "^4.1.2",
     "newick": "^2.0.0",
     "newick-js": "^1.1.1",
+    "string.prototype.replaceall": "^1.0.5",
     "uniq": "^1.0.1"
   },
   "devDependencies": {

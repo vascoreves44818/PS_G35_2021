@@ -130,15 +130,15 @@ function parseTables(data){
 }
 
 function splitByline(data){
-    data = data.replaceAll('\t\t', '\t-\t')
-    data = data.replaceAll('\t\r\n','\t-\r\n')
-    data = data.replaceAll(' ','-')
+    data = data.replace(/\t\t/g, '\t-\t')
+    data = data.replace(/\t\r\n/g,'\t-\r\n')
+    data = data.replace(/ /g,'-')
     var toRet =  data.split('\r\n');
     return toRet;
 }
 
 function splitByTab(data){
-    data = data.replaceAll(' ','-')
+    data = data.replace(/ /g,'-')
     return data.split('\n')
 
 }

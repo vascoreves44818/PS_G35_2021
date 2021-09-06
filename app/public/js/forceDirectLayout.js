@@ -54,7 +54,7 @@ function setup(){
     var json = script.getAttribute('json');
     
     try{
-        json = json.replaceAll('---',' ')
+        json = json.replace(/---/g,' ')
         jsonData = JSON.parse(json);
 
         links = jsonData.links
@@ -1139,6 +1139,7 @@ const profilePieChartTitle = 'profilePieChartTitle'
 const auxPieLabels = '#auxPieLabels'
 const auxPieChartSVG = '#auxPieChartSVG'
 const auxPieChartTitle = 'auxPieChartTitle'
+const nodePieChartLabels = 'nodePieChartLabels'
 
 const profilePieChartDiv = document.getElementById('profilePieChartDiv')
 const auxPieChartDiv = document.getElementById('auxPieChartDiv')
@@ -1499,10 +1500,34 @@ function drawPieChart(nodeElement, data) {
     var path = d3.arc()
         .innerRadius(0)
         .outerRadius(radius)
-        
+    
+        var lbl;    
     arc.append("path")
         .attr("d", path)
         .attr("fill", d => colors[d.data[0]])
+        .on('mouseover', function (d, i) {
+            d3.select(this).transition()
+                 .duration('50')
+                 .attr('opacity', '.85')
+            var divid = document.getElementById(nodePieChartLabels)    
+            lbl =  divid.innerHTML;
+            let nodeKey;
+            try{
+                nodeKey = nodeElement._groups[0][0].children[1].innerHTML;
+            } catch (x){
+                nodeKey= 'unknown'
+            }
+
+            let percentage =  Math.round((i.endAngle - i.startAngle)/(2*Math.PI)*100*100)/100
+            divid.innerHTML += `<br><i class="bi bi-archive-fill">Node: ${nodeKey} Value:${i.data[0]} Count: ${i.data[1]} - ${percentage}%</i>`
+            })
+       .on('mouseout', function (d, i) {
+            d3.select(this).transition()
+                 .duration('50')
+                 .attr('opacity', '1')
+            var divid = document.getElementById(nodePieChartLabels)    
+            divid.innerHTML =  lbl;
+            }); 
 
     
 }
