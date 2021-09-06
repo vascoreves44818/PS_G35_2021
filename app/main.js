@@ -2,6 +2,9 @@ const { app, BrowserWindow } = require("electron")
 
 const server = require('./server')
 server.init()
+const log = require('electron-log');
+const unhandled = require('electron-unhandled');
+//unhandled();
 
 function createWindow(){
     let mainWindow = new BrowserWindow({
@@ -29,3 +32,4 @@ app.on("window-all-closed", () => {
         app.quit();
     }
 })
+

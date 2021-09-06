@@ -48,7 +48,7 @@ function readFiles(req,res,next){
         })
         .catch(err =>{
             res.status = 500;
-            res.end(err)
+            res.end(err.message)
         })
          
 }
