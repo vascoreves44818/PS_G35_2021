@@ -1,6 +1,6 @@
 'use strict'
 let express = require('express');
-let sitemap = require('express-sitemap-html')
+const path = require('path')
 const bodyParser = require('body-parser')
 const formData = require("express-form-data");
 const os = require("os");
@@ -19,10 +19,9 @@ function init(done) {
         let app = express();
 
         app.set('view engine', 'hbs')
-        app.set('views', './lib/views')
+        app.set('views', path.join(__dirname,'lib','views'))
 
-        app.use(express.static('public'))
-        app.get('/sitemap', sitemap(app))
+        app.use(express.static(path.join(__dirname, 'public')))
         app.use(bodyParser.json({limit: "100mb"}))
 
        app.use(bodyParser.urlencoded({extended: false })) // parse application/x-www-form-urlencoded
