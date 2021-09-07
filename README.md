@@ -4,7 +4,7 @@ This project focuses on a non static visualization of phylogenetic trees, Force 
 The application is a modular soluction build using Javascript, Handlebars, HTML and CSS.
 
 + #### [DOCUMENTATION](https://github.com/vascoreves44818/PS_G35_2021/wiki/Documentation)
-+ #### [RUN THE APPLICATION](https://github.com/vascoreves44818/PS_G35_2021/wiki/run_application)
++ #### [RUN THE APPLICATION](https://github.com/vascoreves44818/PS_G35_2021/wiki/Run-Application)
 
 ## Force Directed Layout 
 
